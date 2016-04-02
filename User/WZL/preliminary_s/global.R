@@ -1,0 +1,5 @@
+library(ggplot2)
+library(gridExtra)
+preliminary = readRDS("../preliminary_train_only.rds")
+preliminary.all = readRDS("../preliminary_train_test.rds")
+var.name  = unlist(lapply(preliminary.all,function(x) x$name.i))
