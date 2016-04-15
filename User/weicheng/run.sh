@@ -18,7 +18,7 @@
 #PBS  -o BATCH_OUTPUT 
 #PBS  -e BATCH_ERRORS 
 
-#PBS -lnodes=1:ppn=16:compute,walltime=12:00:00
+#PBS -lnodes=1:ppn=16:compute,walltime=48:00:00
 
 # Change to directory from which qsub command was issued 
 cd $PBS_O_WORKDIR

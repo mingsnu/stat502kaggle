@@ -17,13 +17,12 @@ fitControl <- trainControl(## 10-fold CV
   repeats = 10)
 
 
-xgTreeGrid <- expand.grid(nrounds=seq(10, 100, by = 10),
-                          max_depth = seq(1, 20, by = 2),
-                          eta = seq(0.1, .5, by = 0.05),
-                          colsample_bytree = seq(.1,1,by=.2),
+xgTreeGrid <- expand.grid(nrounds=c(1,5,10,15,20),
+                          max_depth = c(3, 5, 7, 9, 15),
+                          eta = seq(0.1, .5, by = 0.1),
+                          colsample_bytree = c(0.6, 0.8, 1),
                           min_child_weight=1,
-                          gamma=0
-                          )
+                          gamma=c(0, 1, 10))
 
 nrow(xgTreeGrid)
 
@@ -31,11 +30,11 @@ set.seed(825)
 gbmFit2 <- train(TARGET ~ ., data = trn,
                  method = "xgbTree",
                  trControl = fitControl,
-                 verbose = FALSE,
-                 tuneGrid = xgTreeGrid, nthread = 16, 
+                 verbose = TRUE,
+                 tuneGrid = xgTreeGrid, 
                  objective = "binary:logistic", eval_metric="auc" )
 gbmFit2
-
+saveRDS(gbmFit2, "gbmFit2.RDS")
 
 
 ## bstSparse <- xgboost(data = x, label = y, max.depth = 8, eta = 1, 
@@ -57,16 +56,16 @@ gbmFit2
 ## head(res.df)
 ## write.csv(res.df, "../../submission/sumision_xgboost0413.csv", row.names = FALSE, quote = FALSE)
   
-inTraining <- createDataPartition(trn$TARGET, p = .75, list = FALSE)
-training = trn[inTraining,]
-testing = trn[-inTraining,]
+## inTraining <- createDataPartition(trn$TARGET, p = .75, list = FALSE)
+## training = trn[inTraining,]
+## testing = trn[-inTraining,]
 
-dtrain <- xgb.DMatrix(data = Matrix(as.matrix(training[,
- -c(1, ncol(training))]), sparse = TRUE), label = training$TARGET)
+## dtrain <- xgb.DMatrix(data = Matrix(as.matrix(training[,
+##  -c(1, ncol(training))]), sparse = TRUE), label = training$TARGET)
 
-dtest <- xgb.DMatrix(data = Matrix(as.matrix(testing[,
- -c(1, ncol(testing))]), sparse = TRUE), label = testing$TARGET)
+## dtest <- xgb.DMatrix(data = Matrix(as.matrix(testing[,
+##  -c(1, ncol(testing))]), sparse = TRUE), label = testing$TARGET)
 
-watchlist <- list(train=dtrain, test=dtest)
-bst <- xgb.train(data=dtrain, max.depth=10, eta=0.3, nthread = 4,
-nround=20, watchlist=watchlist, objective = "binary:logistic", eval_metric="auc")
+## watchlist <- list(train=dtrain, test=dtest)
+## bst <- xgb.train(data=dtrain, max.depth=10, eta=0.3, nthread = 4,
+## nround=20, watchlist=watchlist, objective = "binary:logistic", eval_metric="auc")
