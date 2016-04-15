@@ -7,11 +7,12 @@ library(dplyr)
 # trn[trn >= 9999999999] = NA
 # tst[tst >= 9999999999] = NA
 # nms = names(trn)
-# nms.del = read.csv("../../data/del_name_list.csv")[[1]]
+# nms.del = read.csv("../../data/del_name_list.csv", stringsAsFactors = FALSE)[[1]]
 # trn.clean = trn[, setdiff(nms, nms.del)]
 # tst.clean = tst[, setdiff(nms, c(nms.del, "TARGET"))]
 # saveRDS(trn.clean, "train_clean.RDS")
 # saveRDS(tst.clean, "test_clean.RDS")
+
 trn = readRDS("train_clean.RDS")
 tst = readRDS("test_clean.RDS")
 head(trn)

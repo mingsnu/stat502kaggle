@@ -15,6 +15,9 @@ fitControl <- trainControl(## 10-fold CV
   number = 10,
   ## repeated ten times
   repeats = 10)
+# ctrl <- trainControl(method="repeatedcv", number=3, repeats=3, verboseIter=T, 
+#                      classProbs=T, summaryFunction=twoClassSummary)
+
 
 
 xgTreeGrid <- expand.grid(nrounds=c(1,5,10,15,20),

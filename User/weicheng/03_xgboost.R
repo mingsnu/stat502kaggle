@@ -42,15 +42,15 @@ set.seed(825)
 gbmFit2 <- train(TARGET ~ ., data = trn,
                  method = "xgbTree",
                  trControl = fitControl,
-                 verbose = FALSE,
+                 verbose = TRUE,
                  tuneGrid = xgTreeGrid, nthread = 6, 
                  objective = "binary:logistic", eval_metric="auc" )
 gbmFit2
 
 
 
-bstSparse <- xgboost(data = x, label = y, max.depth = 8, eta = 1, 
-                     nthread = 6, nround = 3, objective = "binary:logistic")
+bstSparse <- xgboost(data = x, label = y, max.depth = 20, eta = 0.3, 
+                     nthread = 6, nround = 10, objective = "binary:logistic")
 y.pred <- as.numeric(predict(bstSparse, x) > 0.5)
 mean(y.pred != y)
 colAUC(y.pred, y) # 0.6135349
@@ -67,4 +67,4 @@ y.tst.pred = as.numeric(predict(bstSparse, x.tst) > 0.5)
 res.df = data.frame(ID = tst$ID, TARGET = y.tst.pred)
 head(res.df)
 write.csv(res.df, "../../submission/sumision_xgboost0413.csv", row.names = FALSE, quote = FALSE)
-  
+
