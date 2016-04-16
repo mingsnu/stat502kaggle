@@ -50,7 +50,7 @@ xgb_cv_1 = xgb.cv(params = xgb_params_1,
                   verbose = TRUE,
                   print.every.n = 1, 
                   early.stop.round = 0.1*optpar$Rounds,
-                  max_delta_step = 3
+                  scale_pos_weight = sum(y==0)/sum(y==1)  ## rate of 0/1
 )
 
 # plot the AUC for the training and testing samples
