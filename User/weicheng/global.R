@@ -54,6 +54,7 @@ for (rounds in c(10, 100, 500)){
                           eval_metric = 'auc',
                           verbose = TRUE)
           # plot the AUC for the training and testing samples
+         pdf(paste0("imgs/xgboost", rounds, "_", depth, "_", r_sample*100, "_", c_sample*100, "_", eta_val, ".pdf"))
           xgb_cv$dt %>%
             select(-contains("std")) %>%
             mutate(IterationNum = 1:n()) %>%
@@ -61,8 +62,8 @@ for (rounds in c(10, 100, 500)){
             ggplot(aes(x = IterationNum, y = AUC, group = TestOrTrain, color = TestOrTrain)) + 
             geom_line() + 
             theme_bw()
-          ggsave(paste0("imgs/xgboost", rounds, "_", depth, "_", r_sample*100, "_", c_sample*100, "_", eta_val, ".png"))
-          
+          # ggsave(paste0("imgs/xgboost", rounds, "_", depth, "_", r_sample*100, "_", c_sample*100, "_", eta_val, ".png"))
+          dev.off()
           print(paste(rounds, depth, r_sample, c_sample, eta_val, max(xgb_cv$dt$test.auc.mean)))
           GS_LogLoss[nrow(GS_LogLoss)+1, ] = c(rounds, 
                                                depth, 
@@ -76,3 +77,5 @@ for (rounds in c(10, 100, 500)){
     }
   }
 }
+
+write.csv(GS_LogLoss, file = "GS_LogLoss.csv", row.names=TRUE, quote = FALSE)
