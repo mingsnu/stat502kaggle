@@ -2,53 +2,56 @@ library(Matrix)
 library(xgboost)
 library(caTools)
 library(caret)
+library(readr)
+library(dplyr)
+library(tidyr)
 
+# load in the training data
 trn = readRDS("train_clean.RDS")
+tst = readRDS("test_clean.RDS")
 x = Matrix(as.matrix(trn[, -c(1, ncol(trn))]), sparse = TRUE)
 y = trn$TARGET
 
-# history <- xgb.cv(data = x, label = y, nround=3, nthread = 6, nfold = 10, metrics=list("auc"),
-#                   max.depth = 8, eta = 1, objective = "binary:logistic")
+# xgboost fitting with arbitrary parameters
+xgb_params_1 = list(
+  objective = "binary:logistic",                                               # binary classification
+  eta = 0.01,                                                                  # learning rate
+  max.depth = 10,                                                              # max tree depth
+  eval_metric = "auc"                                                          # evaluation/loss metric
+)
 
-fitControl <- trainControl(## 10-fold CV
-  method = "repeatedcv",
-  number = 10,
-  ## repeated ten times
-  repeats = 10)
-# ctrl <- trainControl(method="repeatedcv", number=3, repeats=3, verboseIter=T, 
-#                      classProbs=T, summaryFunction=twoClassSummary)
+# fit the model with the arbitrary parameters specified above
+xgb_1 = xgboost(data = x,
+                label = y,
+                params = xgb_params_1,
+                nrounds = 500,                                                 # max number of trees to build
+                verbose = TRUE,                                         
+                print.every.n = 1,
+                early.stop.round = 10                                          # stop if no improvement within 10 trees
+)
 
+# cross-validate xgboost to get the accurate measure of error
+xgb_cv_1 = xgb.cv(params = xgb_params_1,
+                  data = x,
+                  label = y,
+                  nrounds = 500, 
+                  nfold = 10,                                                   # number of folds in K-fold
+                  prediction = TRUE,                                           # return the prediction using the final model 
+                  showsd = TRUE,                                               # standard deviation of loss across folds
+                  stratified = TRUE,                                           # sample is unbalanced; use stratified sampling
+                  verbose = TRUE,
+                  print.every.n = 1, 
+                  early.stop.round = 10
+)
 
-
-xgTreeGrid <- expand.grid(nrounds=c(1,5,10,15,20),
-                          max_depth = c(3, 5, 7, 9, 15),
-                          eta = seq(0.1, .5, by = 0.1),
-                          colsample_bytree = c(0.6, 0.8, 1),
-                          min_child_weight=1,
-                          gamma=c(0, 1, 10))
-
-nrow(xgTreeGrid)
-
-set.seed(825)
-gbmFit2 <- train(TARGET ~ ., data = trn,
-                 method = "xgbTree",
-                 trControl = fitControl,
-                 verbose = TRUE,
-                 tuneGrid = xgTreeGrid, 
-                 objective = "binary:logistic", eval_metric="auc" )
-gbmFit2
-saveRDS(gbmFit2, "gbmFit2.RDS")
-
-
-## bstSparse <- xgboost(data = x, label = y, max.depth = 8, eta = 1, 
-##                      nthread = 6, nround = 3, objective = "binary:logistic")
-## y.pred <- as.numeric(predict(bstSparse, x) > 0.5)
-## mean(y.pred != y)
-## colAUC(y.pred, y) # 0.6135349
-
-## importance_matrix <- xgb.importance(model = bstSparse)
-## print(importance_matrix)
-## xgb.plot.importance(importance_matrix = importance_matrix)
+# plot the AUC for the training and testing samples
+xgb_cv_1$dt %>%
+  select(-contains("std")) %>%
+  mutate(IterationNum = 1:n()) %>%
+  gather(TestOrTrain, AUC, -IterationNum) %>%
+  ggplot(aes(x = IterationNum, y = AUC, group = TestOrTrain, color = TestOrTrain)) + 
+  geom_line() + 
+  theme_bw()
 
 
 ## ## For test data
