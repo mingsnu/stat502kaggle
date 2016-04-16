@@ -15,67 +15,68 @@ y = trn$TARGET
 
 # ## xgboost parameters selector
 # xgboostPS <- function()
-GS_LogLoss = data.frame("Rounds" = numeric(), 
-                        "Depth" = numeric(),
-                        "r_sample" = numeric(),
-                        "c_sample" = numeric(), 
-                        "eat" = numeric(),
-                        "auc_max" = numeric(),
-                        "best_round" = numeric())
+xg_auc = data.frame("Rounds" = numeric(), 
+                    "Depth" = numeric(),
+                    "r_sample" = numeric(),
+                    "c_sample" = numeric(), 
+                    "eta" = numeric(),
+                    "delta_step" = numeric(),
+                    "auc_max" = numeric(),
+                    "best_round" = numeric())
+## First round tunning parameters
+ROUNDS = c(10, 100, 500)
+DEPTH = c(2, 4, 6, 8, 10)
+RSAMPLE = c(0.5, 0.75, 1)
+CSAMPLE = c(0.6, 0.8, 1)
+ETA =  c(0.1, 0.01, 0.001, 0.0001)
+DELTASTEP = 0
+## Second round tunning parameters
+ROUNDS = c(300, 500, 1000)
+DEPTH = c(5, 6, 7)
+RSAMPLE = c(0.65, 0.75, 0.85)
+CSAMPLE = c(0.75, 0.8, 0.85)
+ETA =  c(0.05, 0.01, 0.005)
+DELTASTEP = c(0, 1, 5)
 
-# xgb_grid_1 = expand.grid(
-#   nrounds = 1000,
-#   eta = c(0.01, 0.001, 0.0001),
-#   max_depth = c(2, 4, 6, 8, 10),
-#   gamma = 1,
-#   colsample_bytree = 1, 
-#   min_child_weight = 1
-# )
-# max_delta_step = c(0, 1, 3)
-
-for (rounds in c(10, 100, 500)){
-  for (depth in c(2, 4, 6, 8, 10)) {
-    for (r_sample in c(0.5, 0.75, 1)) {
-      for (c_sample in c(0.6, 0.8, 1)) {
-        for(eta_val in c(0.1, 0.01, 0.001, 0.0001)){
-          set.seed(1024)
-          xgb_cv = xgb.cv(data = x, label = y, 
-                          nfold = 10,
-                          prediction = TRUE,                                           # return the prediction using the final model 
-                          showsd = TRUE,                                               # standard deviation of loss across folds
-                          stratified = TRUE,    
-                          nrounds = rounds, 
-                          eta = eta_val, 
-                          max_depth = depth,
-                          subsample = r_sample, 
-                          colsample_bytree = c_sample,
-                          early.stop.round = 0.1*rounds,
-                          objective='binary:logistic', 
-                          eval_metric = 'auc',
-                          verbose = TRUE)
-          # plot the AUC for the training and testing samples
-         pdf(paste0("imgs/xgboost", rounds, "_", depth, "_", r_sample*100, "_", c_sample*100, "_", eta_val, ".pdf"))
-          xgb_cv$dt %>%
-            select(-contains("std")) %>%
-            mutate(IterationNum = 1:n()) %>%
-            gather(TestOrTrain, AUC, -IterationNum) %>%
-            ggplot(aes(x = IterationNum, y = AUC, group = TestOrTrain, color = TestOrTrain)) + 
-            geom_line() + 
-            theme_bw()
-          # ggsave(paste0("imgs/xgboost", rounds, "_", depth, "_", r_sample*100, "_", c_sample*100, "_", eta_val, ".png"))
-          dev.off()
-          print(paste(rounds, depth, r_sample, c_sample, eta_val, max(xgb_cv$dt$test.auc.mean)))
-          GS_LogLoss[nrow(GS_LogLoss)+1, ] = c(rounds, 
-                                               depth, 
-                                               r_sample, 
-                                               c_sample, 
-                                               eta_val,
-                                               max(xgb_cv$dt$test.auc.mean), 
-                                               which.max(xgb_cv$dt$test.auc.mean))
+for (rounds in ROUNDS){
+  for (depth in DEPTH) {
+    for (r_sample in RSAMPLE) {
+      for (c_sample in CSAMPLE) {
+        for(eta_val in ETA){
+          for(delta_step in DELTASTEP){
+            set.seed(1024)
+            xgb_cv = xgb.cv(data = x, label = y, 
+                            nfold = 10,
+                            stratified = TRUE,    
+                            nrounds = rounds, 
+                            eta = eta_val, 
+                            max_depth = depth,
+                            subsample = r_sample, 
+                            colsample_bytree = c_sample,
+                            early.stop.round = 0.1*rounds,
+                            max_delta_step = delta_step,
+                            objective='binary:logistic', 
+                            eval_metric = 'auc',
+                            verbose = TRUE)
+            print(paste(rounds, depth, r_sample, c_sample, eta_val, delta_step, max(xgb_cv$dt$test.auc.mean)))
+            xg_auc[nrow(xg_auc)+1, ] = c(rounds, 
+                                         depth, 
+                                         r_sample, 
+                                         c_sample, 
+                                         eta_val,
+                                         delta_step,
+                                         max(xgb_cv$dt$test.auc.mean), 
+                                         which.max(xgb_cv$dt$test.auc.mean)) 
+          }
         }
       }
     }
   }
 }
 
-write.csv(GS_LogLoss, file = "GS_LogLoss.csv", row.names=TRUE, quote = FALSE)
+write.csv(xg_auc, file = "xgboost_PS1.csv", row.names=FALSE, quote = FALSE)
+
+# xg_auc = read.csv("xgboost_PS.csv")
+# head(xg_auc)
+# idx = which.max(xg_auc$auc_max)
+# xg_auc[idx,]
