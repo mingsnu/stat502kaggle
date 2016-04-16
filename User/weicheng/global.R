@@ -5,7 +5,6 @@ library(caret)
 library(readr)
 library(dplyr)
 library(tidyr)
-library(ggplot2)
 
 # load in the training data
 trn = readRDS("train_clean.RDS")
@@ -20,7 +19,7 @@ xg_auc = data.frame("Rounds" = numeric(),
                     "r_sample" = numeric(),
                     "c_sample" = numeric(), 
                     "eta" = numeric(),
-                    "delta_step" = numeric(),
+                    "scale_pos_weight" = numeric(),
                     "auc_max" = numeric(),
                     "best_round" = numeric())
 ## First round tunning parameters
@@ -29,21 +28,21 @@ DEPTH = c(2, 4, 6, 8, 10)
 RSAMPLE = c(0.5, 0.75, 1)
 CSAMPLE = c(0.6, 0.8, 1)
 ETA =  c(0.1, 0.01, 0.001, 0.0001)
-DELTASTEP = 0
+SCALE = 0
 ## Second round tunning parameters
 ROUNDS = c(300, 500, 1000)
 DEPTH = c(5, 6, 7)
 RSAMPLE = c(0.65, 0.75, 0.85)
 CSAMPLE = c(0.75, 0.8, 0.85)
 ETA =  c(0.05, 0.01, 0.005)
-DELTASTEP = c(0, 1, 5)
+SCALE = c(-1, 0, 1)
 
 for (rounds in ROUNDS){
   for (depth in DEPTH) {
     for (r_sample in RSAMPLE) {
       for (c_sample in CSAMPLE) {
         for(eta_val in ETA){
-          for(delta_step in DELTASTEP){
+          for(scale_pos_weight in SCALE){
             set.seed(1024)
             xgb_cv = xgb.cv(data = x, label = y, 
                             nfold = 10,
@@ -54,17 +53,17 @@ for (rounds in ROUNDS){
                             subsample = r_sample, 
                             colsample_bytree = c_sample,
                             early.stop.round = 0.1*rounds,
-                            max_delta_step = delta_step,
+                            scale_pos_weight = scale_pos_weight,
                             objective='binary:logistic', 
                             eval_metric = 'auc',
                             verbose = TRUE)
-            print(paste(rounds, depth, r_sample, c_sample, eta_val, delta_step, max(xgb_cv$dt$test.auc.mean)))
+            print(paste(rounds, depth, r_sample, c_sample, eta_val, scale_pos_weight, max(xgb_cv$dt$test.auc.mean)))
             xg_auc[nrow(xg_auc)+1, ] = c(rounds, 
                                          depth, 
                                          r_sample, 
                                          c_sample, 
                                          eta_val,
-                                         delta_step,
+                                         scale_pos_weight,
                                          max(xgb_cv$dt$test.auc.mean), 
                                          which.max(xgb_cv$dt$test.auc.mean)) 
           }
