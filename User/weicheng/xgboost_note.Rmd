@@ -123,3 +123,204 @@ ggplot(xgb_train_1$results, aes(x = as.factor(eta), y = max_depth, size = ROC, c
   theme_bw() + 
   scale_size_continuous(guide = "none")
 ```
+
+
+- <https://www.kaggle.com/tqchen/otto-group-product-classification-challenge/understanding-xgboost-model-on-otto-data/notebook>
+- <http://fr.slideshare.net/MichaelBENESTY/feature-importance-analysis-with-xgboost-in-tax-audit>
+
+## Complete Guide to Parameter Tuning in XGBoost (with codes in Python)
+
+- <http://www.analyticsvidhya.com/blog/2016/03/complete-guide-parameter-tuning-xgboost-with-codes-python/>
+
+The overall parameters have been divided into 3 categories by XGBoost authors:
+
+- General Parameters: Guide the overall functioning
+- Booster Parameters: Guide the individual booster (tree/regression) at each step
+- Learning Task Parameters: Guide the optimization performed
+
+```{python}
+#Import libraries:
+import pandas as pd
+import numpy as np
+import xgboost as xgb
+from xgboost.sklearn import XGBClassifier
+from sklearn import cross_validation, metrics   #Additional scklearn functions
+from sklearn.grid_search import GridSearchCV   #Perforing grid search
+
+import matplotlib.pylab as plt
+%matplotlib inline
+from matplotlib.pylab import rcParams
+rcParams['figure.figsize'] = 12, 4
+
+train = pd.read_csv('train_modified.csv')
+target = 'Disbursed'
+IDcol = 'ID'
+```
+
+Note that I have imported 2 forms of XGBoost:
+
+1. xgb – this is the direct xgboost library. I will use a specific function “cv” from this library
+2. XGBClassifier – this is an sklearn wrapper for XGBoost. This allows us to use sklearn’s Grid Search with parallel processing in the same way we did for GBM
+
+Before proceeding further, lets define a function which will help us create XGBoost models and perform cross-validation. The best part is that you can take this function as it is and use it later for your own models.
+
+```{python}
+def modelfit(alg, dtrain, predictors,useTrainCV=True, cv_folds=5, early_stopping_rounds=50):
+    
+    if useTrainCV:
+        xgb_param = alg.get_xgb_params()
+        xgtrain = xgb.DMatrix(dtrain[predictors].values, label=dtrain[target].values)
+        cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=alg.get_params()['n_estimators'], nfold=cv_folds,
+            metrics='auc', early_stopping_rounds=early_stopping_rounds, show_progress=False)
+        alg.set_params(n_estimators=cvresult.shape[0])
+    
+    #Fit the algorithm on the data
+    alg.fit(dtrain[predictors], dtrain['Disbursed'],eval_metric='auc')
+        
+    #Predict training set:
+    dtrain_predictions = alg.predict(dtrain[predictors])
+    dtrain_predprob = alg.predict_proba(dtrain[predictors])[:,1]
+        
+    #Print model report:
+    print "\nModel Report"
+    print "Accuracy : %.4g" % metrics.accuracy_score(dtrain['Disbursed'].values, dtrain_predictions)
+    print "AUC Score (Train): %f" % metrics.roc_auc_score(dtrain['Disbursed'], dtrain_predprob)
+                    
+    feat_imp = pd.Series(alg.booster().get_fscore()).sort_values(ascending=False)
+    feat_imp.plot(kind='bar', title='Feature Importances')
+    plt.ylabel('Feature Importance Score')
+```
+
+### General Approach for Parameter Tuning
+
+The various steps to be performed are:
+
+1. Choose a relatively high learning rate. Generally a learning rate of 0.1 works but somewhere between 0.05 to 0.3 should work for different problems. Determine the optimum number of trees for this learning rate. XGBoost has a very useful function called as “cv” which performs cross-validation at each boosting iteration and thus returns the optimum number of trees required.
+2. Tune tree-specific parameters ( max_depth, `min_child_weight`, gamma, subsample, colsample_bytree) for decided learning rate and number of trees. Note that we can choose different parameters to define a tree and I’ll take up an example here.
+3.Tune regularization parameters (lambda, alpha) for xgboost which can help reduce model complexity and enhance performance.
+4. Lower the learning rate and decide the optimal parameters.
+
+Let us look at a more detailed step by step approach.
+
+#### Step 1: Fix learning rate and number of estimators for tuning tree-based parameters
+
+In order to decide on boosting parameters, we need to set some initial values of other parameters. Lets take the following values:
+
+1. max_depth = 5 : This should be between 3-10. I’ve started with 5 but you can choose a different number as well. 4-6 can be good starting points.
+2. `min_child_weight` = 1 : A smaller value is chosen because it is a highly imbalanced class problem and leaf nodes can have smaller size groups.
+3. gamma = 0 : A smaller value like 0.1-0.2 can also be chosen for starting. This will anyways be tuned later.
+subsample, colsample_bytree = 0.8 : This is a commonly used used start value. Typical values range between 0.5-0.9.
+4. scale_pos_weight = 1: Because of high class imbalance.
+Please note that all the above are just initial estimates and will be tuned later. Lets take the default learning rate of 5. 0.1 here and check the optimum number of trees using cv function of xgboost. The function defined above will do it for us.
+
+```{python}
+#Choose all predictors except target & IDcols
+predictors = [x for x in train.columns if x not in [target, IDcol]]
+xgb1 = XGBClassifier(
+ learning_rate =0.1,
+ n_estimators=1000,
+ max_depth=5,
+ min_child_weight=1,
+ gamma=0,
+ subsample=0.8,
+ colsample_bytree=0.8,
+ objective= 'binary:logistic',
+ nthread=4,
+ scale_pos_weight=1,
+ seed=27)
+modelfit(xgb1, train, predictors)
+```
+
+
+Please note that all the above are just initial estimates and will be tuned later. Lets take the default learning rate of 0.1 here and check the optimum number of trees using cv function of xgboost. The function defined above will do it for us.
+
+As you can see that here we got 140 as the optimal estimators for 0.1 learning rate. Note that this value might be too high for you depending on the power of your system. In that case you can increase the learning rate and re-run the command to get the reduced number of estimators.
+
+#### Step 2: Tune `max_depth` and `min_child_weight`
+
+We tune these first as they will have the highest impact on model outcome. To start with, let’s set wider ranges and then we will perform another iteration for smaller ranges.
+
+```{python}
+param_test1 = {
+ 'max_depth':range(3,10,2),
+ 'min_child_weight':range(1,6,2)
+}
+gsearch1 = GridSearchCV(estimator = XGBClassifier( learning_rate =0.1, n_estimators=140, max_depth=5,
+ min_child_weight=1, gamma=0, subsample=0.8, colsample_bytree=0.8,
+ objective= 'binary:logistic', nthread=4, scale_pos_weight=1, seed=27), 
+ param_grid = param_test1, scoring='roc_auc',n_jobs=4,iid=False, cv=5)
+gsearch1.fit(train[predictors],train[target])
+gsearch1.grid_scores_, gsearch1.best_params_, gsearch1.best_score_
+```
+
+Here, we have run 12 combinations with wider intervals between values. The ideal values are 5 for `max_depth` and 5 for `min_child_weight`. Lets go one step deeper and look for optimum values. We’ll search for values 1 above and below the optimum values because we took an interval of two.
+
+Here, we get the optimum values as 4 for `max_depth` and 6 for `min_child_weight`. Also, we can see the CV score increasing slightly. Note that as the model performance increases, it becomes exponentially difficult to achieve even marginal gains in performance. You would have noticed that here we got 6 as optimum value for `min_child_weight` but we haven’t tried values more than 6. 
+
+####Step 3: Tune gamma
+
+Now lets tune gamma value using the parameters already tuned above. Gamma can take various values but I’ll check for 5 values here. You can go into more precise values as.
+
+```{python}
+param_test3 = {
+ 'gamma':[i/10.0 for i in range(0,5)]
+}
+gsearch3 = GridSearchCV(estimator = XGBClassifier( learning_rate =0.1, n_estimators=140, max_depth=4,
+ min_child_weight=6, gamma=0, subsample=0.8, colsample_bytree=0.8,
+ objective= 'binary:logistic', nthread=4, scale_pos_weight=1,seed=27), 
+ param_grid = param_test3, scoring='roc_auc',n_jobs=4,iid=False, cv=5)
+gsearch3.fit(train[predictors],train[target])
+gsearch3.grid_scores_, gsearch3.best_params_, gsearch3.best_score_
+```
+
+This shows that our original value of gamma, i.e. 0 is the optimum one. Before proceeding, a good idea would be to re-calibrate the number of boosting rounds for the updated parameters.
+
+```{pyton}
+xgb2 = XGBClassifier(
+ learning_rate =0.1,
+ n_estimators=1000,
+ max_depth=4,
+ min_child_weight=6,
+ gamma=0,
+ subsample=0.8,
+ colsample_bytree=0.8,
+ objective= 'binary:logistic',
+ nthread=4,
+ scale_pos_weight=1,
+ seed=27)
+modelfit(xgb2, train, predictors)
+```
+
+#### Step 4: Tune subsample and colsample_bytree
+
+The next step would be try different subsample and colsample_bytree values. Lets do this in 2 stages as well and take values 0.6,0.7,0.8,0.9 for both to start with.
+
+```{python}
+param_test4 = {
+ 'subsample':[i/10.0 for i in range(6,10)],
+ 'colsample_bytree':[i/10.0 for i in range(6,10)]
+}
+gsearch4 = GridSearchCV(estimator = XGBClassifier( learning_rate =0.1, n_estimators=177, max_depth=4,
+ min_child_weight=6, gamma=0, subsample=0.8, colsample_bytree=0.8,
+ objective= 'binary:logistic', nthread=4, scale_pos_weight=1,seed=27), 
+ param_grid = param_test4, scoring='roc_auc',n_jobs=4,iid=False, cv=5)
+gsearch4.fit(train[predictors],train[target])
+gsearch4.grid_scores_, gsearch4.best_params_, gsearch4.best_score_
+```
+
+
+Here, we found 0.8 as the optimum value for both subsample and colsample_bytree. Now we should try values in 0.05 interval around these.
+Again we got the same values as before. Thus the optimum values are:
+
+subsample: 0.8
+colsample_bytree: 0.8
+
+#### Step 5: Tuning Regularization Parameters
+
+#### Step 6: Reducing Learning Rate
+
+
+As we come to the end, I would like to share 2 key thoughts:
+
+- It is difficult to get a very big leap in performance by just using parameter tuning or slightly better models. The max score for GBM was 0.8487 while XGBoost gave 0.8494. This is a decent improvement but not something very substantial.
+- A significant jump can be obtained by other methods like feature engineering, creating ensemble of models, stacking, etc

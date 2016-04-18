@@ -30,3 +30,5 @@ importanceRaw <- xgb.importance(feature_names = sparse_matrix@Dimnames[[2]], mod
 importanceClean <- importanceRaw[,`:=`(Cover=NULL, Frequency=NULL)]
 head(importanceRaw)
 xgb.plot.importance(importance_matrix = importanceRaw)
+
+xgb.plot.tree(feature_names = sparse_matrix@Dimnames[[2]], model = bst, n_first_tree = 2)
