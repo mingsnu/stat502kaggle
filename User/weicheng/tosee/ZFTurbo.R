@@ -3,8 +3,8 @@ library(Matrix)
 
 set.seed(1234)
 
-train <- read.csv("../input/train.csv")
-test  <- read.csv("../input/test.csv")
+train <- read.csv("../../data/train.csv")
+test  <- read.csv("../../data/test.csv")
 
 ##### Removing IDs
 train$ID <- NULL
@@ -51,7 +51,8 @@ feature.names <- setdiff(names(train), toRemove)
 
 train <- train[, feature.names]
 test <- test[, feature.names]
-
+# saveRDS(train, "train_zft.RDS")
+# saveRDS(test, "test_zft.RDS")
 train$TARGET <- train.y
 
 
@@ -78,10 +79,31 @@ clf <- xgb.train(   params              = param,
 )
 
 
+clf.cv <- xgb.cv(params = param,
+                 data = dtrain,
+                 nrounds = 1000, 
+                 nfold = 10,                                                   # number of folds in K-fold
+                 prediction = TRUE,                                           # return the prediction using the final model 
+                 showsd = TRUE,                                               # standard deviation of loss across folds
+                 stratified = TRUE,                                           # sample is unbalanced; use stratified sampling
+                 verbose = TRUE,
+                 print.every.n = 1, 
+                 early.stop.round = 100
+)
+
 test$TARGET <- -1
 test <- sparse.model.matrix(TARGET ~ ., data = test)
 
 preds <- predict(clf, test)
 submission <- data.frame(ID=test.id, TARGET=preds)
 cat("saving the submission file\n")
-write.csv(submission, "submission.csv", row.names = F)
+## write.csv(submission, "submission.csv", row.names = F)
+
+
+importance <- xgb.importance(feature_names = train@Dimnames[[2]], model = clf)
+xgb.plot.importance(importance_matrix = importance[1:100])
+write.csv(importance, "importance.csv", row.names=FALSE, quote=FALSE)
+
+aa = read.csv("submission.csv")
+head(aa)
+plot(aa$TARGET, submission$TARGET)

@@ -9,24 +9,39 @@ library(tidyr)
 ## load in the training/testing data
 trn = readRDS("train_clean.RDS")
 tst = readRDS("test_clean.RDS")
-x = Matrix(as.matrix(trn[, -c(1, ncol(trn))]), sparse = TRUE)
-y = trn$TARGET
+trn[is.na(trn)] = -999
+tst[is.na(tst)] = -999
+
+##### Extracting TARGET
+y <- trn$TARGET
+trn$TARGET <- NULL
+
+##### 0 count per line
+count0 <- function(x) {
+  return( sum(x == 0) )
+}
+trn$n0 <- apply(trn, 1, FUN=count0)
+tst$n0 <- apply(tst, 1, FUN=count0)
+
+x = Matrix(as.matrix(trn[, -1]), sparse = TRUE)
+
 
 # trn = trn[,-grep("^ind",names(trn))]
 ## load parameter selection file
-xg_auc = read.csv("xgboost_PS1.csv")
+xg_auc = read.csv("xgboost_PS2.csv")
 optpar = xg_auc[which.max(xg_auc$auc_max),]
 # or manully construct optpar
 optpar = data.frame(Rounds = 500, Depth=6, r_sample = 0.75, c_sample=0.75, eta = 0.01)
 optpar = data.frame(Rounds = 500, Depth=6, r_sample = 0.65, c_sample=0.8, eta = 0.05, 
                     scale_pos_weight = 0.8, best_round = 130)
-optpar = data.frame(Rounds = 1000, Depth=7, r_sample = 0.65, c_sample=0.8, eta = 0.005, 
-                    scale_pos_weight = 1, best_round = 1000)
+optpar = data.frame(Rounds = 1000, Depth=5, r_sample = 0.75, c_sample=0.7, eta = 0.01, 
+                    scale_pos_weight = 2, best_round = 725)
 optpar = data.frame(Rounds=1000, Depth = 5, r_sample = 0.683, c_sample = 0.7, eta =0.0203,
                     scale_pos_weight = 1, best_round = 384)
 
 # "1000 7 0.65 0.8 0.005 1 0.841415"
 # "1000 7 0.65 0.85 0.005 1 0.84142"
+# 1000	5	0.75	0.7	0.01	2	0.5	0.842248	725
 
 
 ## xgboost fitting with arbitrary parameters
@@ -52,10 +67,10 @@ xgbst = xgboost(params = xgb_params,
 y.pred <- predict(xgbst, x)
 colAUC(y.pred, y) # 0.8858437
 
-aa = read.csv("submission.csv")
-head(aa)
-aa$TARGET[tst$var15<22] = 0
-colAUC(y.pred, y)
+# aa = read.csv("submission.csv")
+# head(aa)
+# aa$TARGET[tst$var15<22] = 0
+# colAUC(y.pred, y)
 
 importance <- xgb.importance(feature_names = x@Dimnames[[2]], model = xgbst)
 head(importance)
@@ -63,9 +78,9 @@ head(importance)
 # # Cleaning for better display
 # importanceClean <- importanceRaw[,`:=`(Cover=NULL, Frequency=NULL)]
 # head(importanceRaw)
-xgb.plot.importance(importance_matrix = importance)
-xgb.plot.tree(feature_names = sparse_matrix@Dimnames[[2]], model = xgbst, n_first_tree = 2)
-
+xgb.plot.importance(importance_matrix = importance[1:100])
+#xgb.plot.tree(feature_names = sparse_matrix@Dimnames[[2]], model = xgbst, n_first_tree = 2)
+#write.csv(importance, "importance.csv", row.names=FALSE, quote=FALSE)
 
 # cross-validate xgboost to get the accurate measure of error
 set.seed(1024)
@@ -93,19 +108,14 @@ xgb_cv_1$dt %>%
   ggplot(aes(x = IterationNum, y = AUC, group = TestOrTrain, color = TestOrTrain)) + 
   geom_line() + 
   theme_bw()
-importance_matrix <- xgb.importance(model = bstSparse)
-print(importance_matrix)
-xgb.plot.importance(importance_matrix = importance_matrix)
 
 
 ## ## For test data
-tst = readRDS("test_clean.RDS")
 x.tst = Matrix(as.matrix(tst[, -1]), sparse = TRUE)
 y.tst.pred = predict(xgbst, x.tst)
 res.df = data.frame(ID = tst$ID, TARGET = y.tst.pred)
 head(res.df)
-write.csv(res.df, "../../submission/sumision_xgboost0417_1.csv", row.names = FALSE, quote = FALSE)
-write.csv(aa, "../../submission/sumision_xgboost0418_3.csv", row.names = FALSE, quote = FALSE)
+write.csv(res.df, "../../submission/sumision_xgboost0420.csv", row.names = FALSE, quote = FALSE)
 
 ## inTraining <- createDataPartition(trn$TARGET, p = .75, list = FALSE)
 ## training = trn[inTraining,]
@@ -120,3 +130,4 @@ write.csv(aa, "../../submission/sumision_xgboost0418_3.csv", row.names = FALSE, 
 ## watchlist <- list(train=dtrain, test=dtest)
 ## bst <- xgb.train(data=dtrain, max.depth=10, eta=0.3, nthread = 4,
 ## nround=20, watchlist=watchlist, objective = "binary:logistic", eval_metric="auc")
+
