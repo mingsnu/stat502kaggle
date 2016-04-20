@@ -23,6 +23,9 @@ count0 <- function(x) {
 trn$n0 <- apply(trn, 1, FUN=count0)
 tst$n0 <- apply(tst, 1, FUN=count0)
 
+# trn$TARGET = y
+# saveRDS(trn, "train_clean.RDS")
+# saveRDS(tst, "test_clean.RDS")
 x = Matrix(as.matrix(trn[, -1]), sparse = TRUE)
 
 
