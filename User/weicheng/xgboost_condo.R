@@ -12,6 +12,7 @@ tst = readRDS("test_clean.RDS")
 x = Matrix(as.matrix(trn[, -c(1, ncol(trn))]), sparse = TRUE)
 y = trn$TARGET
 
+# trn = trn[,-grep("^ind",names(trn))]
 ## load parameter selection file
 xg_auc = read.csv("xgboost_PS1.csv")
 optpar = xg_auc[which.max(xg_auc$auc_max),]
@@ -21,6 +22,9 @@ optpar = data.frame(Rounds = 500, Depth=6, r_sample = 0.65, c_sample=0.8, eta = 
                     scale_pos_weight = 0.8, best_round = 130)
 optpar = data.frame(Rounds = 1000, Depth=7, r_sample = 0.65, c_sample=0.8, eta = 0.005, 
                     scale_pos_weight = 1, best_round = 1000)
+optpar = data.frame(Rounds=1000, Depth = 5, r_sample = 0.683, c_sample = 0.7, eta =0.0203,
+                    scale_pos_weight = 1, best_round = 384)
+
 # "1000 7 0.65 0.8 0.005 1 0.841415"
 # "1000 7 0.65 0.85 0.005 1 0.84142"
 
@@ -47,6 +51,12 @@ xgbst = xgboost(params = xgb_params,
 
 y.pred <- predict(xgbst, x)
 colAUC(y.pred, y) # 0.8858437
+
+aa = read.csv("submission.csv")
+head(aa)
+aa$TARGET[tst$var15<22] = 0
+colAUC(y.pred, y)
+
 importance <- xgb.importance(feature_names = x@Dimnames[[2]], model = xgbst)
 head(importance)
 # importanceRaw <- xgb.importance(feature_names = x@Dimnames[[2]], model = xgbst, data = x, label = y)
@@ -95,7 +105,8 @@ y.tst.pred = predict(xgbst, x.tst)
 res.df = data.frame(ID = tst$ID, TARGET = y.tst.pred)
 head(res.df)
 write.csv(res.df, "../../submission/sumision_xgboost0417_1.csv", row.names = FALSE, quote = FALSE)
-  
+write.csv(aa, "../../submission/sumision_xgboost0418_3.csv", row.names = FALSE, quote = FALSE)
+
 ## inTraining <- createDataPartition(trn$TARGET, p = .75, list = FALSE)
 ## training = trn[inTraining,]
 ## testing = trn[-inTraining,]
