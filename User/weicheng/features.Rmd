@@ -1,0 +1,8 @@
+---
+title: "Feature description"
+output: html_document
+---
+
+## File: features_weicheng.R
+
+1. `f_var15`: ratio of 0/1 by each level of `var15`

@@ -9,25 +9,25 @@ library(tidyr)
 ## load in the training/testing data
 trn = readRDS("train_clean.RDS")
 tst = readRDS("test_clean.RDS")
-trn[is.na(trn)] = -999
-tst[is.na(tst)] = -999
-
-##### Extracting TARGET
-y <- trn$TARGET
-trn$TARGET <- NULL
-
-##### 0 count per line
-count0 <- function(x) {
-  return( sum(x == 0) )
-}
-trn$n0 <- apply(trn, 1, FUN=count0)
-tst$n0 <- apply(tst, 1, FUN=count0)
+# trn[is.na(trn)] = -999
+# tst[is.na(tst)] = -999
+# 
+# ##### Extracting TARGET
+# y <- trn$TARGET
+# trn$TARGET <- NULL
+# 
+# ##### 0 count per line
+# count0 <- function(x) {
+#   return( sum(x == 0) )
+# }
+# trn$n0 <- apply(trn, 1, FUN=count0)
+# tst$n0 <- apply(tst, 1, FUN=count0)
 
 # trn$TARGET = y
 # saveRDS(trn, "train_clean.RDS")
 # saveRDS(tst, "test_clean.RDS")
-x = Matrix(as.matrix(trn[, -1]), sparse = TRUE)
-
+x = Matrix(as.matrix(trn[, -c(1, ncol(trn))]), sparse = TRUE)
+y = trn$TARGET
 
 # trn = trn[,-grep("^ind",names(trn))]
 ## load parameter selection file

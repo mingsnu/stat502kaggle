@@ -97,7 +97,7 @@ test <- sparse.model.matrix(TARGET ~ ., data = test)
 preds <- predict(clf, test)
 submission <- data.frame(ID=test.id, TARGET=preds)
 cat("saving the submission file\n")
-## write.csv(submission, "submission.csv", row.names = F)
+## write.csv(submission, "../../submission/submission.csv", row.names = F)
 
 
 importance <- xgb.importance(feature_names = train@Dimnames[[2]], model = clf)
