@@ -118,6 +118,10 @@ quantile.max=function(train,test)
    cbind(ID=1:nrow(x),x)
  })
  
+
+ #####################################
+ ##
+ 
 ######
 setwd("C:/Users/hjsang/Dropbox/502X/KAGGAL/feature")
 
@@ -134,3 +138,5 @@ write.csv(f5[[1]],"quantilediffnum_train.csv",row.names = F)
 write.csv(f5[[2]],"quantilediffnum_test.csv",row.names = F)
 write.csv(f6[[1]],"quantilerationum_tain.csv",row.names = F)
 write.csv(f6[[2]],"quantilerationum_test.csv",row.names = F)
+
+

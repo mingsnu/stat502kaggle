@@ -51,6 +51,15 @@ feature_zl = function(trn,tst,fun.name)
 }
 
 feature.new = feature_zl(trn = train.d,tst = test.d,fun.name = fun.name)
+feature.previous.trn = NULL
+feature.previous.tst = NULL
+file.names = c("feature_based_on_var15_test_data","feature_based_on_var15_train_data","feature_based_on_var36_test_data","feature_based_on_var36_train_data",
+               "feature_based_one_less_than_four_discrete_levels_test_data","feature_based_one_less_than_four_discrete_levels_train_data")
+file.names.trn = file.names[grep("train",file.names)]
+file.names.tst = file.names[grep("test",file.names)]
+
+for (i in 1:length(file.names))
+
 
 write.csv(feature.new$trn,"../feature_zl_ensample_train.csv",row.names = FALSE)
 write.csv(feature.new$tst,"../feature_zl_ensample_test.csv",row.names = FALSE)

@@ -8,6 +8,7 @@ library(tidyr)
 
 trn = readRDS("train_clean.RDS")
 tst = readRDS("test_clean.RDS")
+
 # source("features_weicheng.R")
 # f1 = f_var15_ratio(trn, tst)
 # f2 = f_var38_peak(trn, tst)
@@ -40,22 +41,25 @@ tst = readRDS("test_clean.RDS")
 #   left_join(read.csv("../../feature/quantilerationum_tain.csv"))
 # write.csv(bb, "../../feature/feature_hj_ensample_test.csv")
 
-### Adding Weicheng's features
-ftrn.weich = read.csv("../../feature/feature_weich_ensample_train.csv")
-ftst.weich = read.csv("../../feature/feature_weich_ensample_test.csv")
+files = list.files("../../feature")
+ftrn.nms = grep("train", files, value = TRUE)
+ftst.nms = grep("test", files, value = TRUE)
+if(length(ftrn.nms) != length(ftst.nms))
+  error("train and test file number doesn't match!!!!!")
+ftrn = list()
+ftst = list()
+for(i in length(ftrn.nms)){
+  cat("Combining features\n")
+  ftrn = read.csv(paste0("../../feature/", ftrn.nms[i]))
+  ftst = read.csv(paste0("../../feature/", ftst.nms[i]))
+  trn = left_join(trn, ftrn)
+  tst = left_join(tst, ftst)
+}
 
-### Adding Hejian's features
-ftrn.hj = read.csv("../../feature/feature_hj_ensample_train.csv")
-ftst.hj = read.csv("../../feature/feature_hj_ensample_test.csv")
-
-### Adding Zhonglei's features
-ftrn.zl = read.csv("../../feature/feature_zl_ensample_train.csv")
-ftst.zl = read.csv("../../feature/feature_zl_ensample_test.csv")
-trn = trn %>% left_join(ftrn.weich) %>% left_join(ftrn.hj) %>% left_join(ftrn.zl)
-tst = tst %>% left_join(ftst.weich) %>% left_join(ftst.hj) %>% left_join(ftst.zl)
-
-
+y = trn$TARGET
+trn$TARGET = NULL
 x = Matrix(as.matrix(trn[, -1]), sparse = TRUE)
+
 
 xg_auc = read.csv("xgboost_PS2.csv")
 tail(xg_auc[order(xg_auc$auc_max),], 20)
