@@ -32,7 +32,7 @@ x = Matrix(as.matrix(trn[, -1]), sparse = TRUE)
 
 ### Step 1: Tuning `max_depth` and `min_child_weight`
 cat("Step1: Tuning max_depth and min_child\n")
-if(!exists("xg_auc1.csv")){
+if(!exists("tuning/xg_auc1.csv")){
   xgb_params = list(
     objective = "binary:logistic",    # binary classification
     eta = 0.1,       # learning rate
@@ -49,8 +49,8 @@ if(!exists("xg_auc1.csv")){
                        "auc_max" = numeric(),
                        "std" = numeric(),
                        "best_round" = numeric())
-  for(depth in c(4, 5, 6))
-    for(mcw in c(1, 2, 3)){
+  for(depth in c(3, 4, 5, 6))
+    for(mcw in c(0.5, 1, 2, 3, 4)){
       xgb_cv = xgb.cv(params = xgb_params,
                       data = x,
                       label = y,
@@ -64,13 +64,20 @@ if(!exists("xg_auc1.csv")){
                       min_child_weight = mcw,
                       scale_pos_weight = 1  ## rate of 0/1
       )
-      print(paste(depth, mcw, max(xgb_cv$test.auc.mean)))
+      m = xgb_cv$test.auc.mean
+      std = xgb_cv$test.auc.std
+      idx = order(m, decreasing = TRUE)[1:3]
+      m.top3  = m[idx]
+      std.top3 = std[idx]
+      n.top3 = which(m %in% m.top3)
+      
+      print(paste(depth, mcw, mean(m.top3), mean(std.top3)))
       xg_auc1[nrow(xg_auc1)+1, ] = c(depth, 
                                      mcw,
                                      # max(xgb_cv$dt$test.auc.mean), 
-                                     max(xgb_cv$test.auc.mean), 
-                                     xgb_cv$test.auc.std[which.max(xgb_cv$test.auc.mean)],
-                                     which.max(xgb_cv$test.auc.mean)) 
+                                     mean(m.top3), 
+                                     mean(std.top3),
+                                     mean(n.top3))
     }
   write.csv(xg_auc1, "tuning/xg_auc1.csv", row.names = FALSE, quote = FALSE)
 }
@@ -96,7 +103,7 @@ if(!exists("tuning/xg_auc2.csv")){
                        "auc_max" = numeric(),
                        "std" = numeric(),
                        "best_round" = numeric())
-  for(gamma in seq(0, 1, by=0.2)){
+  for(gamma in seq(0, 1, by=0.1)){
     xgb_cv = xgb.cv(params = xgb_params,
                     data = x,
                     label = y,
@@ -109,11 +116,18 @@ if(!exists("tuning/xg_auc2.csv")){
                     early.stop.round = 50,
                     scale_pos_weight = 1  ## rate of 0/1
     )
-    print(paste(gamma, max(xgb_cv$test.auc.mean)))
+      m = xgb_cv$test.auc.mean
+      std = xgb_cv$test.auc.std
+      idx = order(m, decreasing = TRUE)[1:3]
+      m.top3  = m[idx]
+      std.top3 = std[idx]
+      n.top3 = which(m %in% m.top3)
+
+    print(paste(gamma, mean(m.top3), mean(std.top3)))
     xg_auc2[nrow(xg_auc2)+1, ] = c(gamma,
-                                   max(xgb_cv$test.auc.mean), 
-                                   xgb_cv$test.auc.std[which.max(xgb_cv$test.auc.mean)],
-                                   which.max(xgb_cv$test.auc.mean)) 
+                                     mean(m.top3), 
+                                     mean(std.top3),
+                                     mean(n.top3))
   }
   write.csv(xg_auc2, "tuning/xg_auc2.csv", row.names = FALSE, quote = FALSE)
 }
@@ -141,8 +155,8 @@ if(!exists("tuning/xg_auc3.csv")){
                        "auc_max" = numeric(),
                        "std" = numeric(),
                        "best_round" = numeric())
-  for(r_sample in c(0.5, 0.6, 0.7, 0.8))
-    for(c_sample in c(0.5, 0.6, 0.7, 0.8)){
+  for(r_sample in seq(0.5, 0.8, by=0.05))
+    for(c_sample in seq(0.4, 0.8, by=0.05)){
       xgb_cv = xgb.cv(params = xgb_params,
                       data = x,
                       label = y,
@@ -156,18 +170,26 @@ if(!exists("tuning/xg_auc3.csv")){
                       early.stop.round = 50,
                       scale_pos_weight = 1  ## rate of 0/1
       )
-      print(paste(r_sample, c_sample, max(xgb_cv$test.auc.mean)))
+
+      m = xgb_cv$test.auc.mean
+      std = xgb_cv$test.auc.std
+      idx = order(m, decreasing = TRUE)[1:3]
+      m.top3  = m[idx]
+      std.top3 = std[idx]
+      n.top3 = which(m %in% m.top3)
+      
+      print(paste(r_sample, c_sample, mean(m.top3), mean(std.top3)))
       xg_auc3[nrow(xg_auc3)+1, ] = c(r_sample, c_sample,
-                                     max(xgb_cv$test.auc.mean), 
-                                     xgb_cv$test.auc.std[which.max(xgb_cv$test.auc.mean)],
-                                     which.max(xgb_cv$test.auc.mean)) 
+                                     mean(m.top3), 
+                                     mean(std.top3),
+                                     mean(n.top3))
     }
   write.csv(xg_auc3, "tuning/xg_auc3.csv", row.names = FALSE, quote = FALSE)
 }
 
 #### Step4: Tuning scale_pos_weight
 cat("Step4: Tuning scale_pos_weight\n")
-if(!exists("xg_auc4.csv")){
+if(!exists("tuning/xg_auc4.csv")){
   xg_auc1 = read.csv("tuning/xg_auc1.csv")
   xg_auc2 = read.csv("tuning/xg_auc2.csv")
   xg_auc3 = read.csv("tuning/xg_auc3.csv")
@@ -189,7 +211,7 @@ if(!exists("xg_auc4.csv")){
                        "auc_max" = numeric(),
                        "std" = numeric(),
                        "best_round" = numeric())
-  for(sp_weight in c(1, 2, 3, 4)){
+  for(sp_weight in c(0.5, 1, 2, 3, 4)){
     xgb_cv = xgb.cv(params = xgb_params,
                     data = x,
                     label = y,
@@ -201,19 +223,27 @@ if(!exists("xg_auc4.csv")){
                     early.stop.round = 50,
                     scale_pos_weight = sp_weight ## rate of 0/1
     )
-    print(paste(sp_weight, max(xgb_cv$test.auc.mean)))
+
+      m = xgb_cv$test.auc.mean
+      std = xgb_cv$test.auc.std
+      idx = order(m, decreasing = TRUE)[1:3]
+      m.top3  = m[idx]
+      std.top3 = std[idx]
+      n.top3 = which(m %in% m.top3)
+      
+    print(paste(sp_weight, mean(m.top3), mean(std.top3)))
     xg_auc4[nrow(xg_auc4)+1, ] = c(sp_weight,
-                                   # max(xgb_cv$dt$test.auc.mean), 
-                                   max(xgb_cv$test.auc.mean), 
-                                   xgb_cv$test.auc.std[which.max(xgb_cv$test.auc.mean)],
-                                   which.max(xgb_cv$test.auc.mean)) 
+                                   # max(xgb_cv$dt$test.auc.mean),
+                                     mean(m.top3), 
+                                     mean(std.top3),
+                                     mean(n.top3))
   }
   write.csv(xg_auc4, "tuning/xg_auc4.csv", row.names = FALSE, quote = FALSE)
 }
 
 #### Step5: Tuning learning rate
 cat("Step5: Tuning learning rate\n")
-if(!exists("xg_auc5.csv")){
+if(!exists("tuning/xg_auc5.csv")){
   xg_auc1 = read.csv("tuning/xg_auc1.csv")
   xg_auc2 = read.csv("tuning/xg_auc2.csv")
   xg_auc3 = read.csv("tuning/xg_auc3.csv")
@@ -237,7 +267,7 @@ if(!exists("xg_auc5.csv")){
                        "auc_max" = numeric(),
                        "std" = numeric(),
                        "best_round" = numeric())
-  for(eta in c(0.01, 0.015, 0.02, 0.025, 0.03)){
+  for(eta in seq(0.01, 0.025, by = 0.002)){
     xgb_cv = xgb.cv(params = xgb_params,
                     data = x,
                     label = y,
@@ -250,54 +280,61 @@ if(!exists("xg_auc5.csv")){
                     early.stop.round = 50,
                     scale_pos_weight = optpar4$scale_pos_weight ## rate of 0/1
     )
-    print(paste(eta, max(xgb_cv$test.auc.mean)))
+      m = xgb_cv$test.auc.mean
+      std = xgb_cv$test.auc.std
+      idx = order(m, decreasing = TRUE)[1:3]
+      m.top3  = m[idx]
+      std.top3 = std[idx]
+      n.top3 = which(m %in% m.top3)
+      
+    print(paste(eta, mean(m.top3), mean(std.top3)))
     xg_auc5[nrow(xg_auc5)+1, ] = c(eta,
-                                   # max(xgb_cv$dt$test.auc.mean), 
-                                   max(xgb_cv$test.auc.mean), 
-                                   xgb_cv$test.auc.std[which.max(xgb_cv$test.auc.mean)],
-                                   which.max(xgb_cv$test.auc.mean)) 
+                                     mean(m.top3), 
+                                     mean(std.top3),
+                                     mean(n.top3))
   }
   write.csv(xg_auc5, "tuning/xg_auc5.csv", row.names = FALSE, quote = FALSE)
 }
 
 
 
-#########################
-xg_auc1 = read.csv("tuning/xg_auc1.csv")
-xg_auc2 = read.csv("tuning/xg_auc2.csv")
-xg_auc3 = read.csv("tuning/xg_auc3.csv")
-xg_auc4 = read.csv("tuning/xg_auc4.csv")
-xg_auc5 = read.csv("tuning/xg_auc5.csv")
-optpar1 = xg_auc1[which.max(xg_auc1$auc_max),]
-optpar2 = xg_auc2[which.max(xg_auc2$auc_max),]
-optpar3 = xg_auc3[which.max(xg_auc3$auc_max),]
-optpar4 = xg_auc4[which.max(xg_auc4$auc_max),]
-optpar5 = xg_auc5[which.max(xg_auc5$auc_max),]
-xgb_params = list(
-  objective = "binary:logistic",    # binary classification
-  eta = optpar5$eta,       # learning rate
-  max_depth = optpar1$Depth,      # max tree depth
-  min_child_weight = optpar1$Min_child_weight,
-  subsample = optpar3$r_sample,
-  colsample_bytree = optpar3$c_sample,
-  gamma = optpar2$gamma,
-  eval_metric = "auc"     # evaluation/auc metric
-)
-xgbst = xgboost(params = xgb_params,
-                data = x,
-                label = y,
-                nrounds = optpar5$best_round,    # max number of trees to build
-                verbose = TRUE,                                         
-                print.every.n = 1,
-                early.stop.round = 100,     # stop if no improvement within 0.1*optpar$Rounds trees
-                scale_pos_weight = optpar4$scale_pos_weight
-)
+## #########################
+## xg_auc1 = read.csv("tuning/xg_auc1.csv")
+## xg_auc2 = read.csv("tuning/xg_auc2.csv")
+## xg_auc3 = read.csv("tuning/xg_auc3.csv")
+## xg_auc4 = read.csv("tuning/xg_auc4.csv")
+## xg_auc5 = read.csv("tuning/xg_auc5.csv")
+## optpar1 = xg_auc1[which.max(xg_auc1$auc_max),]
+## optpar2 = xg_auc2[which.max(xg_auc2$auc_max),]
+## optpar3 = xg_auc3[which.max(xg_auc3$auc_max),]
+## optpar4 = xg_auc4[which.max(xg_auc4$auc_max),]
+## optpar5 = xg_auc5[which.max(xg_auc5$auc_max),]
+## xgb_params = list(
+##   objective = "binary:logistic",    # binary classification
+##   eta = optpar5$eta,       # learning rate
+##   max_depth = optpar1$Depth,      # max tree depth
+##   min_child_weight = optpar1$Min_child_weight,
+##   subsample = optpar3$r_sample,
+##   colsample_bytree = optpar3$c_sample,
+##   gamma = optpar2$gamma,
+##   eval_metric = "auc"     # evaluation/auc metric
+## )
+
+## xgbst = xgboost(params = xgb_params,
+##                 data = x,
+##                 label = y,
+##                 nrounds = optpar5$best_round,    # max number of trees to build
+##                 verbose = TRUE,                                         
+##                 print.every.n = 1,
+##                 early.stop.round = 100,     # stop if no improvement within 0.1*optpar$Rounds trees
+##                 scale_pos_weight = optpar4$scale_pos_weight
+## )
 
 
-## ## For test data
-x.tst = Matrix(as.matrix(tst[, -1]), sparse = TRUE)
-y.tst.pred = predict(xgbst, x.tst)
-res.df = data.frame(ID = tst$ID, TARGET = y.tst.pred)
-head(res.df)
-plot(res.df$TARGET, aa$TARGET)
-write.csv(res.df, "../../submission/sumision_xgboost0420_3.csv", row.names = FALSE, quote = FALSE)
+## ## ## For test data
+## x.tst = Matrix(as.matrix(tst[, -1]), sparse = TRUE)
+## y.tst.pred = predict(xgbst, x.tst)
+## res.df = data.frame(ID = tst$ID, TARGET = y.tst.pred)
+## head(res.df)
+## plot(res.df$TARGET, aa$TARGET)
+## write.csv(res.df, "../../submission/sumision_xgboost0420_3.csv", row.names = FALSE, quote = FALSE)
