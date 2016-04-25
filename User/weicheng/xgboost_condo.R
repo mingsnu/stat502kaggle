@@ -9,8 +9,8 @@ library(tidyr)
 ## load in the training/testing data
 trn = readRDS("train_clean.RDS")
 tst = readRDS("test_clean.RDS")
-# trn[is.na(trn)] = -999
-# tst[is.na(tst)] = -999
+trn[is.na(trn)] = -999
+tst[is.na(tst)] = -999
 # 
 # ##### Extracting TARGET
 # y <- trn$TARGET
@@ -28,6 +28,7 @@ tst = readRDS("test_clean.RDS")
 # saveRDS(tst, "test_clean.RDS")
 x = Matrix(as.matrix(trn[, -c(1, ncol(trn))]), sparse = TRUE)
 y = trn$TARGET
+x.tst = Matrix(as.matrix(tst[, -1]), sparse = TRUE)
 
 # trn = trn[,-grep("^ind",names(trn))]
 ## load parameter selection file
@@ -41,11 +42,12 @@ optpar = data.frame(Rounds = 1000, Depth=5, r_sample = 0.75, c_sample=0.7, eta =
                     scale_pos_weight = 2, best_round = 725)
 optpar = data.frame(Rounds=1000, Depth = 5, r_sample = 0.683, c_sample = 0.7, eta =0.0203,
                     scale_pos_weight = 1, best_round = 384)
-
+optpar = data.frame(Rounds=2000, Depth = 5, r_sample = 0.68, c_sample = 0.68, eta =0.01,
+                    best_round = 769)
 # "1000 7 0.65 0.8 0.005 1 0.841415"
 # "1000 7 0.65 0.85 0.005 1 0.84142"
 # 1000	5	0.75	0.7	0.01	2	0.5	0.842248	725
-
+# 2000,5,0.68,0.68,0.01,1,0,0.842196,0.006927,769
 
 ## xgboost fitting with arbitrary parameters
 xgb_params = list(
@@ -63,12 +65,11 @@ xgbst = xgboost(params = xgb_params,
                 nrounds = optpar$best_round,    # max number of trees to build
                 verbose = TRUE,                                         
                 print.every.n = 1,
-                early.stop.round = 0.1*optpar$Rounds,     # stop if no improvement within 0.1*optpar$Rounds trees
-                scale_pos_weight = optpar$scale_pos_weight
+                early.stop.round = 0.1*optpar$Rounds
 )
-
-y.pred <- predict(xgbst, x)
-colAUC(y.pred, y) # 0.8858437
+# Convert previous features to one hot encoding
+new.features.train <- xgb.create.features(model = xgbst, x)
+new.features.test <- xgb.create.features(model = xgbst, x.tst)
 
 # aa = read.csv("submission.csv")
 # head(aa)
@@ -87,38 +88,48 @@ xgb.plot.importance(importance_matrix = importance[1:100])
 
 # cross-validate xgboost to get the accurate measure of error
 set.seed(1024)
-xgb_cv_1 = xgb.cv(params = xgb_params,
-                  data = x,
+xgb_cv = xgb.cv(params = xgb_params,
+                  data = new.features.train,
                   label = y,
                   nrounds =optpar$Rounds, 
                   nfold = 10,                                                   # number of folds in K-fold
-                  prediction = TRUE,                                           # return the prediction using the final model 
-                  showsd = TRUE,                                               # standard deviation of loss across folds
+                  # prediction = TRUE,                                           # return the prediction using the final model 
+                  # showsd = TRUE,                                               # standard deviation of loss across folds
                   stratified = TRUE,                                           # sample is unbalanced; use stratified sampling
                   verbose = TRUE,
                   print.every.n = 1, 
-                  early.stop.round = 0.1*optpar$Rounds,
-                  scale_pos_weight = optpar$scale_pos_weight  ## rate of 0/1
+                  early.stop.round = 0.1*optpar$Rounds
 )
 
 # plot the AUC for the training and testing samples
 # if predict is TRUE, should use $dt to extract the mean and sd
 # otherwise use it directly.
-xgb_cv_1$dt %>%
-  select(-contains("std")) %>%
-  mutate(IterationNum = 1:n()) %>%
-  gather(TestOrTrain, AUC, -IterationNum) %>%
-  ggplot(aes(x = IterationNum, y = AUC, group = TestOrTrain, color = TestOrTrain)) + 
-  geom_line() + 
-  theme_bw()
+# xgb_cv_1$dt %>%
+#   select(-contains("std")) %>%
+#   mutate(IterationNum = 1:n()) %>%
+#   gather(TestOrTrain, AUC, -IterationNum) %>%
+#   ggplot(aes(x = IterationNum, y = AUC, group = TestOrTrain, color = TestOrTrain)) + 
+#   geom_line() + 
+#   theme_bw()
 
+xgbst.new = xgboost(params = xgb_params,
+                    data = new.features.train,
+                    label = y,
+                    nrounds = which.max(xgb_cv$test.auc.mean),    # max number of trees to build
+                    verbose = TRUE,                                         
+                    print.every.n = 1,
+                    early.stop.round = 0.1*optpar$Rounds
+)
+
+# y.pred <- predict(xgbst.new, x)
+# colAUC(y.pred, y) # 0.8858437
 
 ## ## For test data
-x.tst = Matrix(as.matrix(tst[, -1]), sparse = TRUE)
-y.tst.pred = predict(xgbst, x.tst)
+# x.tst = Matrix(as.matrix(tst[, -1]), sparse = TRUE)
+y.tst.pred = predict(xgbst.new, new.features.test)
 res.df = data.frame(ID = tst$ID, TARGET = y.tst.pred)
 head(res.df)
-write.csv(res.df, "../../submission/sumision_xgboost0420.csv", row.names = FALSE, quote = FALSE)
+write.csv(res.df, "../../submission/sumision_xgboost0423_1.csv", row.names = FALSE, quote = FALSE)
 
 ## inTraining <- createDataPartition(trn$TARGET, p = .75, list = FALSE)
 ## training = trn[inTraining,]

@@ -72,4 +72,6 @@ f(tbl2)
 nms.var3andmore = setdiff(nms, nms.var2)
 
 
+table(trn$ind_var7_emit_ult1, trn$TARGET)
+
 
