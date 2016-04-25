@@ -138,4 +138,12 @@ output: html_document
 
 65. `f_diff_var_15_var_36_less_60`.**Perfect feature!!!! More than 50000 non zero, and the pattern is clear!!!**
 
-66. 
+66. `f_diff_var_15_var_36_rank`. **Rank of this variable. Perfect feature!!!! More than 50000 non zero, and the pattern is clear!!!**
+
+67. `f_diff_var_15_var_36_cutpoint_larger`. **Larger value (more than .07 ratio)**.
+
+68. `f_diff_var_15_var_36_cutpoint_smaller`. **Smaller value (less than 0.02 ratio).**
+
+69. `f_diff_var_15_smaller`. **Smaller value of var 15 (less than 0.02 ratio)**.
+
+70. `f_diff_var_15_larger`. **Larger value of var 15 (larger than .07 ratio).**

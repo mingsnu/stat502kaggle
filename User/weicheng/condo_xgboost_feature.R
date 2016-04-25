@@ -8,37 +8,6 @@ library(tidyr)
 
 trn = readRDS("train_clean.RDS")
 tst = readRDS("test_clean.RDS")
-# source("features_weicheng.R")
-# f1 = f_var15_ratio(trn, tst)
-# f2 = f_var38_peak(trn, tst)
-# f3 = f_var38_ratio(trn, tst)
-# f5 = f_ind_comb_rank(trn, tst)
-# y = trn$TARGET
-# trn$TARGET = NULL
-# trn = trn %>% left_join(f1$trn) %>% left_join(f2$trn) %>% left_join(f3$trn) %>% left_join(f5$trn)
-# tst = tst %>% left_join((f1$tst)) %>% left_join((f2$tst)) %>% left_join((f3$tst)) %>% left_join(f5$tst)
-
-# write.csv(trn[, c("ID", "var15_ratio", "var_38_peak", "var38_ratio", "ind_comb_rank")], "../../feature/feature_weich_ensample_train.csv",
-#           row.names = FALSE, quote=FALSE)
-# write.csv(tst[, c("ID", "var15_ratio", "var_38_peak", "var38_ratio", "ind_comb_rank")], "../../feature/feature_weich_ensample_test.csv",
-#           row.names = FALSE, quote=FALSE)
-
-# ## hejian's feature
-# aa = trn %>% select(ID) %>% left_join(read.csv("../../feature/numberofnot0balance_train.csv")) %>%
-#   left_join(read.csv("../../feature/quantilediffbalance_train.csv")) %>%
-#   left_join(read.csv("../../feature/quantileratiobalance_tain.csv")) %>%
-#   left_join(read.csv("../../feature/numberofnot0num_train.csv")) %>%
-#   left_join(read.csv("../../feature/quantilediffnum_train.csv")) %>%
-#   left_join(read.csv("../../feature/quantilerationum_tain.csv"))
-# write.csv(aa, "../../feature/feature_hj_ensample_train.csv")
-# 
-# bb = trn %>% select(ID) %>% left_join(read.csv("../../feature/numberofnot0balance_test.csv")) %>%
-#   left_join(read.csv("../../feature/quantilediffbalance_test.csv")) %>%
-#   left_join(read.csv("../../feature/quantileratiobalance_tain.csv")) %>%
-#   left_join(read.csv("../../feature/numberofnot0num_test.csv")) %>%
-#   left_join(read.csv("../../feature/quantilediffnum_test.csv")) %>%
-#   left_join(read.csv("../../feature/quantilerationum_tain.csv"))
-# write.csv(bb, "../../feature/feature_hj_ensample_test.csv")
 
 ### Adding Weicheng's features
 ftrn.weich = read.csv("../../feature/feature_weich_ensample_train.csv")
@@ -51,9 +20,9 @@ ftst.hj = read.csv("../../feature/feature_hj_ensample_test.csv")
 ### Adding Zhonglei's features
 ftrn.zl = read.csv("../../feature/feature_zl_ensample_train.csv")
 ftst.zl = read.csv("../../feature/feature_zl_ensample_test.csv")
+
 trn = trn %>% left_join(ftrn.weich) %>% left_join(ftrn.hj) %>% left_join(ftrn.zl)
 tst = tst %>% left_join(ftst.weich) %>% left_join(ftst.hj) %>% left_join(ftst.zl)
-
 
 x = Matrix(as.matrix(trn[, -1]), sparse = TRUE)
 
@@ -63,7 +32,7 @@ optpar = xg_auc[which.max(xg_auc$auc_max),]
 optpar = data.frame(Rounds=1000, Depth = 5, r_sample = 0.683, c_sample = 0.7, eta =0.0203,
                     scale_pos_weight = 1, best_round = 488)
 optpar = data.frame(Rounds=2000, Depth = 5, r_sample = 0.68, c_sample = 0.68, eta =0.01,
-                     best_round = 769)
+                    best_round = 769)
 optpar = data.frame(Rounds=2000, Depth = 5, r_sample = 0.68, c_sample = 0.5, eta =0.01,
                     best_round = 769)
 # 2000 5 0.7 0.7 0.01 1 0 0.84199 0.006977"
@@ -95,16 +64,16 @@ xgb.plot.importance(importance_matrix = importance[1:10])
 
 set.seed(1024)
 xgb_cv = xgb.cv(params = xgb_params,
-                  data = x,
-                  label = y,
-                  nrounds =optpar$Rounds, 
-                  nfold = 10,                                                   # number of folds in K-fold
-                  prediction = TRUE,                                           # return the prediction using the final model 
-                  showsd = TRUE,                                               # standard deviation of loss across folds
-                  stratified = TRUE,                                           # sample is unbalanced; use stratified sampling
-                  verbose = TRUE,
-                  print.every.n = 1, 
-                  early.stop.round = 50
+                data = x,
+                label = y,
+                nrounds =optpar$Rounds, 
+                nfold = 10,                                                   # number of folds in K-fold
+                prediction = TRUE,                                           # return the prediction using the final model 
+                showsd = TRUE,                                               # standard deviation of loss across folds
+                stratified = TRUE,                                           # sample is unbalanced; use stratified sampling
+                verbose = TRUE,
+                print.every.n = 1, 
+                early.stop.round = 50
 )
 #  Best iteration: 585
 
@@ -292,25 +261,25 @@ if(!exists("xg_auc4.csv")){
                        "auc_max" = numeric(),
                        "std" = numeric(),
                        "best_round" = numeric())
-    for(sp_weight in c(1, 2, 3, 4)){
-      xgb_cv = xgb.cv(params = xgb_params,
-                      data = x,
-                      label = y,
-                      nrounds = 2000, 
-                      nfold = 10,                                                   # number of folds in K-fold
-                      stratified = TRUE,                                           # sample is unbalanced; use stratified sampling
-                      verbose = FALSE,
-                      print.every.n = 1, 
-                      early.stop.round = 50,
-                      scale_pos_weight = sp_weight ## rate of 0/1
-      )
-      print(paste(sp_weight, max(xgb_cv$test.auc.mean)))
-      xg_auc4[nrow(xg_auc4)+1, ] = c(sp_weight,
-                                     # max(xgb_cv$dt$test.auc.mean), 
-                                     max(xgb_cv$test.auc.mean), 
-                                     xgb_cv$test.auc.std[which.max(xgb_cv$test.auc.mean)],
-                                     which.max(xgb_cv$test.auc.mean)) 
-    }
+  for(sp_weight in c(1, 2, 3, 4)){
+    xgb_cv = xgb.cv(params = xgb_params,
+                    data = x,
+                    label = y,
+                    nrounds = 2000, 
+                    nfold = 10,                                                   # number of folds in K-fold
+                    stratified = TRUE,                                           # sample is unbalanced; use stratified sampling
+                    verbose = FALSE,
+                    print.every.n = 1, 
+                    early.stop.round = 50,
+                    scale_pos_weight = sp_weight ## rate of 0/1
+    )
+    print(paste(sp_weight, max(xgb_cv$test.auc.mean)))
+    xg_auc4[nrow(xg_auc4)+1, ] = c(sp_weight,
+                                   # max(xgb_cv$dt$test.auc.mean), 
+                                   max(xgb_cv$test.auc.mean), 
+                                   xgb_cv$test.auc.std[which.max(xgb_cv$test.auc.mean)],
+                                   which.max(xgb_cv$test.auc.mean)) 
+  }
   write.csv(xg_auc4, "tuning/xg_auc4.csv", row.names = FALSE, quote = FALSE)
 }
 

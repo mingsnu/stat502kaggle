@@ -13,7 +13,8 @@ fun.name=c(
   "f_change_var2_NA_2","f_change_var2_NA_3","f_diff_num_var30_42","f_diff_num_var30_4","f_diff_num_var30_0_42_0",
   "f_diff_saldo_var30_42","f_diff_var36_38","f_diff_saldo_var5_30","f_diff_saldo_var5_42","f_diff_num_var22_ult3_num_med_var45_ult3",
   "f_diff_saldo_var5_saldo_medio_var5_hace2","f_diff_saldo_var5_saldo_medio_var5_hace3","f_diff_saldo_var5_saldo_medio_var5_ult1","f_diff_saldo_medio_var5_hace2_saldo_medio_var5_ult1",
-  "f_diff_saldo_medio_var5_hace3_saldo_medio_var5_ult3","f_diff_var_15_var_38","f_diff_var_15_var_36_less_60")
+  "f_diff_saldo_medio_var5_hace3_saldo_medio_var5_ult3","f_diff_var_15_var_38","f_diff_var_15_var_36_less_60","f_diff_var_15_var_36_rank","f_diff_var_15_var_36_cutpoint_larger","f_diff_var_15_var_36_cutpoint_smaller",
+  "f_diff_var_15_smaller","f_diff_var_15_larger")
 feature_zl = function(trn,tst,fun.name)
 {
   len.fun = length(fun.name)
@@ -35,9 +36,17 @@ feature_zl = function(trn,tst,fun.name)
   delta.var = f_change_var_delat_NA_neg_05(trn,tst)
   feature.tst = cbind(feature.tst,delta.var$tst)
   feature.trn = cbind(feature.trn,delta.var$trn)
+  
+  ind = apply(feature.trn,2,function(x) (sum(x>0) >0) & (sum(x<0)>0) & (sum(is.na(x)) == 0))
+  colnames(feature.trn)[ind]
+  feature.trn.abs = abs(feature.trn[ind])
+  colnames(feature.trn.abs)=paste0("abs_",colnames(feature.trn.abs))
+  feature.tst.abs = abs(feature.tst[ind])
+  colnames(feature.tst.abs)=paste0("abs_",colnames(feature.trn.abs))
+  
   return(list(
-    trn = feature.trn,
-    tst = feature.tst
+    trn = cbind(feature.trn,feature.trn.abs),
+    tst = cbind(feature.tst,feature.tst.abs)
   ))
 }
 

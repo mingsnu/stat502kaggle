@@ -663,3 +663,73 @@ f_diff_var_15_var_36_greater_60<-  function(trn,tst){
               tst = feature.2))
 }
 
+f_diff_var_15_var_36_rank<-  function(trn,tst){
+  name.1 = "var15" ### Good one Important feature
+  name.2 = "var36"
+  feature.1 = abs(trn[,name.1] - trn[,name.2])
+  feature.2 = abs(tst[,name.1] - tst[,name.2])
+  feature.sum = index.sort(feature.1 =feature.1,feature.2 = feature.2,target = trn[,"TARGET"])
+  return(feature.sum)
+}
+
+f_diff_var_15_var_36_cutpoint_larger<-  function(trn,tst){
+  name.1 = "var15" ### Good one Important feature
+  name.2 = "var36"
+  feature.1 = abs(trn[,name.1] - trn[,name.2])
+  aaa = table(feature.1,train.d[,"TARGET"])
+  bbb = aaa[,2]/aaa[,1]
+  ind = as.double(names(bbb))[bbb>.07]
+  feature.1[feature.1%in% ind] = 1
+  feature.1[!(feature.1%in% ind)] = 0
+  feature.2 = abs(tst[,name.1] - tst[,name.2])
+  feature.2[feature.2%in% ind] = 1
+  feature.2[!(feature.2%in% ind)] = 0
+  return(list(trn = feature.1,
+              tst = feature.2))
+}
+
+f_diff_var_15_var_36_cutpoint_smaller<-  function(trn,tst){
+  name.1 = "var15" ### Good one Important feature
+  name.2 = "var36"
+  feature.1 = abs(trn[,name.1] - trn[,name.2])
+  aaa = table(feature.1,train.d[,"TARGET"])
+  bbb = aaa[,2]/aaa[,1]
+  ind = as.double(names(bbb))[bbb<.02]
+  feature.1[feature.1%in% ind] = 1
+  feature.1[!(feature.1%in% ind)] = 0
+  feature.2 = abs(tst[,name.1] - tst[,name.2])
+  feature.2[feature.2%in% ind] = 1
+  feature.2[!(feature.2%in% ind)] = 0
+  return(list(trn = feature.1,
+              tst = feature.2))
+}
+
+f_diff_var_15_smaller<-  function(trn,tst){
+  name.1 = "var15" ### Good one Important feature
+  feature.1 = abs(trn[,name.1] )
+  aaa = table(feature.1,train.d[,"TARGET"])
+  bbb = aaa[,2]/aaa[,1]
+  ind = as.double(names(bbb))[bbb<.02]
+  feature.1[feature.1%in% ind] = 1
+  feature.1[!(feature.1%in% ind)] = 0
+  feature.2 = abs(tst[,name.1] )
+  feature.2[feature.2%in% ind] = 1
+  feature.2[!(feature.2%in% ind)] = 0
+  return(list(trn = feature.1,
+              tst = feature.2))
+}
+
+f_diff_var_15_larger<-  function(trn,tst){
+  name.1 = "var15" ### Good one Important feature
+  feature.1 = abs(trn[,name.1] )
+  aaa = table(feature.1,train.d[,"TARGET"])
+  bbb = aaa[,2]/aaa[,1]
+  ind = as.double(names(bbb))[bbb>.07]
+  feature.1[feature.1%in% ind] = 1
+  feature.1[!(feature.1%in% ind)] = 0
+  feature.2 = abs(tst[,name.1] )
+  feature.2[feature.2%in% ind] = 1
+  feature.2[!(feature.2%in% ind)] = 0
+  return(list(trn = feature.1,
+              tst = feature.2))
+}
