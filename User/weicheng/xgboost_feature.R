@@ -12,11 +12,24 @@ source("features_weicheng.R")
 f1 = f_var15_ratio(trn, tst)
 f2 = f_var38_peak(trn, tst)
 f3 = f_var38_ratio(trn, tst)
-
+f5 = f_ind_comb_rank(trn, tst)
 y = trn$TARGET
 trn$TARGET = NULL
-trn = trn %>% left_join(f1$trn) %>% left_join(f2$trn) %>% left_join(f3$trn)
-tst = tst %>% left_join((f1$tst)) %>% left_join((f2$tst)) %>% left_join((f3$tst))
+trn = trn %>% left_join(f1$trn) %>% left_join(f2$trn) %>% left_join(f3$trn) %>% left_join(f5$trn)
+tst = tst %>% left_join((f1$tst)) %>% left_join((f2$tst)) %>% left_join((f3$tst)) %>% left_join(f5$tst)
+
+# write.csv(trn[, c("ID", "var15_ratio", "var_38_peak", "var38_ratio", "ind_comb_rank")], "../../feature/feature_weich_ensample_train.csv",
+#           row.names = FALSE, quote=FALSE)
+# write.csv(tst[, c("ID", "var15_ratio", "var_38_peak", "var38_ratio", "ind_comb_rank")], "../../feature/feature_weich_ensample_test.csv",
+#           row.names = FALSE, quote=FALSE)
+
+### Adding Zhonglei's features
+ftrn.zl = read.csv("../../feature/feature_zl_ensample_train.csv")
+ftst.zl = read.csv("../../feature/feature_zl_ensample_test.csv")
+
+trn = trn %>% left_join(ftrn.zl)
+tst = tst %>% left_join(ftst.zl)
+
 x = Matrix(as.matrix(trn[, -1]), sparse = TRUE)
 
 xg_auc = read.csv("xgboost_PS2.csv")
@@ -24,8 +37,10 @@ tail(xg_auc[order(xg_auc$auc_max),], 20)
 optpar = xg_auc[which.max(xg_auc$auc_max),]
 optpar = data.frame(Rounds=1000, Depth = 5, r_sample = 0.683, c_sample = 0.7, eta =0.0203,
                     scale_pos_weight = 1, best_round = 488)
-optpar = data.frame(Rounds=1000, Depth = 5, r_sample = 0.68, c_sample = 0.68, eta =0.01,
+optpar = data.frame(Rounds=2000, Depth = 5, r_sample = 0.68, c_sample = 0.68, eta =0.01,
                      best_round = 769)
+optpar = data.frame(Rounds=2000, Depth = 5, r_sample = 0.68, c_sample = 0.5, eta =0.01,
+                    best_round = 769)
 # 2000 5 0.7 0.7 0.01 1 0 0.84199 0.006977"
 # 2000,5,0.68,0.68,0.01,1,0,0.842196,0.006927,769
 
@@ -46,8 +61,7 @@ xgbst = xgboost(params = xgb_params,
                 nrounds = optpar$best_round,    # max number of trees to build
                 verbose = TRUE,                                         
                 print.every.n = 1,
-                early.stop.round = 100,     # stop if no improvement within 0.1*optpar$Rounds trees
-                scale_pos_weight = optpar$scale_pos_weight
+                early.stop.round = 50
 )
 
 importance <- xgb.importance(feature_names = x@Dimnames[[2]], model = xgbst)
@@ -65,8 +79,7 @@ xgb_cv = xgb.cv(params = xgb_params,
                   stratified = TRUE,                                           # sample is unbalanced; use stratified sampling
                   verbose = TRUE,
                   print.every.n = 1, 
-                  early.stop.round = 0.1*optpar$Rounds,
-                  scale_pos_weight = optpar$scale_pos_weight  ## rate of 0/1
+                  early.stop.round = 50
 )
 #  Best iteration: 585
 

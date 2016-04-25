@@ -1,0 +1,141 @@
+---
+title: "Feature description"
+output: html_document
+---
+
+## File: features_weicheng.R
+
+1. `f_var15_ratio`: ratio of 1/0 by each level of `var15`
+
+2. `f_var38_peak`: indicator, peak or not for `var38`
+
+3. `f_var38_ratio`: ratio of 1/0. 
+
+    **Feature description:** First calculate the density estimations for `log(var38)` by removing the `peak` values, for TARGET = 0 and TARGET = 1 seperately, using the training data, resulting in two density functions `dens0` and `dens1`. Then for any given value of `log(var38)` (either training or testing data), estimate the coresponding density values `den0` and `den1` and the ratio is calulated as `den1/den0`.
+    
+4. `f_ind_comb_rank`: based on the table of the pasted "01.." strings of variables starting with "ind", give positive ranks to the combinations which has total counts > 80 and prob of 1 > 0.05 and negative ranks to the combinations which has total counts >80 and prob of 0 < 0.02. The rank value is the return value.
+
+
+## File: features_zhonglei.R
+4. `f_num_non_zero_sum_ind`: total number of non-zero items in the ``ind_'' variables. This feature is the ordered version based on the 1/0 ratio.
+
+5. `f_num_non_zero_sum_saldo`: total number of non-zero items in the ``saldo_'' variables. This feature is the ordered version based on the 1/0 ratio.
+
+
+6. `f_num_zero_sum_delta`: total number of zero items in the ``delta_'' variables. This feature is the ordered version based on the 1/0 ratio.
+
+7. `f_num_neg_1_sum_delta`: total number of -1 items in the ``delta_'' variables. This feature is the ordered version based on the 1/0 ratio.
+
+8. `f_num_3_sum_num`: total number of 3 items in the ``num_'' variables. This feature is the ordered version based on the 1/0 ratio.
+
+9. `f_num_0_sum_num`: total number of 0 items in the ``num_'' variables. This feature is the ordered version based on the 1/0 ratio.
+
+10. `f_num_0_sum_imp`: total number of 0 items in the ``imp_'' variables. This feature is the ordered version based on the 1/0 ratio.
+
+11. `f_num_quan_70_sum_imp`: total number of items that are greater than the correponding .7 sample quantile in the ``imp_'' variables. This feature is the ordered version based on the 1/0 ratio. **Notice that this feature is not suitable for the CV.**
+
+12. `f_num_quan_70_sum_saldo`: total number of items that are greater than the correponding .7 sample quantile in the ``saldo_'' variables. This feature is the ordered version based on the 1/0 ratio. **Notice that this feature is not suitable for the CV.**
+
+13. `f_diff_imp_op_var39_comer_ult13`: Difference between ''imp_op_var39_comer_ult1''  and  ''imp_op_var39_comer_ult3''.
+
+14. `f_diff_imp_op_var40_efect_comer_ult1 `: Difference between "imp_op_var40_comer_ult1"  and  "imp_op_var40_efect_ult1".
+
+15. `f_diff_imp_op_var40_comer_ult13`: Difference between ''imp_op_var40_comer_ult1''  and  ''imp_op_var40_comer_ult3''.
+
+16. `f_diff_imp_op_var41_comer_ult13`: Difference between ''imp_op_var41_comer_ult1''  and  ''imp_op_var41_comer_ult3''.
+
+17. `f_diff_imp_op_var41_efect_comer_ult1 `: Difference between "imp_op_var41_comer_ult1"  and  "imp_op_var41_efect_ult1".
+
+18. `f_diff_num_op_var40_ult13 `: Difference between "num_op_var40_ult1"  and  "num_op_var40_ult3". **No need to reorder**.
+
+19. `f_diff_num_op_var41_ult13 `: Difference between "num_op_var41_ult1"  and  "num_op_var41_ult3". **No need to reorder**.
+
+20. `f_diff_imp_trasp_var17_in_out_ult1 `: Difference between "imp_trasp_var17_in_ult1" and  "imp_trasp_var17_out_ult1". **No need to reorder, not so many zeros**.
+
+21. `f_diff_imp_trasp_var33_in_out_ult1 `: Difference between "imp_trasp_var33_in_ult1" and  "imp_trasp_var33_out_ult1". **No need to reorder, not so many zeros**.
+
+22. `f_diff_imp_op_var41_efect_ult13 `: Difference between "imp_op_var41_efect_ult1" and  "imp_op_var41_efect_ult3". **No need to reorder, good feature ^-^**.
+
+23. `f_diff_num_op_var40_ult13 `: Difference between "num_op_var40_ult1" and  "num_op_var40_ult3". **No need to reorder, not so many zeros**.
+
+24. `f_diff_num_op_var41_ult13 `: Difference between "num_op_var41_ult1" and  "num_op_var41_ult3". **No need to reorder**.
+
+25. `f_diff_imp_var7_emit_receib_ult1`: Difference between "imp_var7_emit_ult1" and  "imp_var7_recib_ult1". **No need to reorder, not so many nonzeros**.
+
+26. `f_diff_num_meses_var13_corto_largo_ult3`: Difference between "num_meses_var13_corto_ult3" and  "num_meses_var13_largo_ult3". **Good one, and it is reordered. All negative values corresponds to the case 0**
+
+27. `f_diff_num_op_var41_comer_efect_ult1`: Difference between "num_op_var41_comer_ult1" and  "num_op_var41_efect_ult1". **No need to reorder**.
+
+28. `f_diff_num_op_var41_efect_ult13`: Difference between "num_op_var41_efect_ult1" and  "num_op_var41_efect_ult3". **Not sure whether it should be ordered or not!!!!**.
+
+29. `f_diff_num_op_var41_efect_comer_ult1`: Difference between "num_op_var41_efect_ult1" and  "num_op_var41_comer_ult1". **Not sure whether it should be ordered or not!!!!**.
+
+30. `f_diff_num_op_var41_comer_efect_ult3`: Difference between "num_op_var41_efect_ult3" and  "num_op_var41_comer_ult3". **No need to reorder**.
+
+31. `f_diff_num_op_var39_efect_ult13`: Difference between "num_op_var39_efect_ult1" and  "num_op_var39_efect_ult3". **Not sure whether this should be reordered**.
+
+32. `f_diff_num_var43_emit_recib_ult1`: Difference between "num_var43_emit_ult1" and  "num_var43_recib_ult1". **No need to reorder**.
+
+33. `f_diff_num_var45_ult13`: Difference between "num_var45_ult1" and  "num_var45_ult3". **No need to reorder**.
+
+34. `f_diff_saldo_medio_var5_ult13`: Difference between "saldo_medio_var5_ult1" and  "saldo_medio_var5_ult3". **No need to reorder**.
+
+35. `f_diff_saldo_medio_var8_ult13`: Difference between "saldo_medio_var8_ult1" and  "saldo_medio_var8_ult3". **No need to reorder**.
+
+36. `f_diff_saldo_medio_var5_8_ult11`: Difference between "saldo_medio_var8_ult1" and  "saldo_medio_var5_ult1". **No need to reorder**.
+
+37. `f_diff_saldo_medio_var12_ult13`: Difference between "saldo_medio_var12_ult1" and  "saldo_medio_var12_ult3". **No need to reorder**.
+
+38. `f_diff_saldo_medio_var13_corto_ult13`: Difference between "saldo_medio_var13_corto_ult1" and  "saldo_medio_var13_corto_ult3". **No need to reorder**.
+
+39. `f_diff_saldo_medio_var13_largo_corto_ult3`: Difference between "saldo_medio_var13_largo_ult3" and  "saldo_medio_var13_corto_ult3". **No need to reorder. This is a very good one, and positive values corresponds to the 0 case**.
+
+40. `f_diff_saldo_medio_var13_medio_corto_ult3`: Difference between "saldo_medio_var13_medio_ult1" and  "saldo_medio_var13_corto_ult3". **No need to reorder. This is a good one.**.
+
+41. `f_diff_saldo_medio_var44_ult13`: Difference between "saldo_medio_var13_medio_ult1" and  "saldo_medio_var13_corto_ult3". **No need to reorder. This is a good one, and non-zero corresponds to the case 0.**.
+
+42. `f_diff_imp_aport_amort_var34_ult1`: Difference between "imp_amort_var34_ult1"  and  "imp_aport_var13_ult1". **No need to reorder. This is a good one.**.
+
+43. `f_diff_imp_aport_var17_13_ult1`: Difference between "imp_aport_var17_ult1"  and  "imp_aport_var13_ult1". **No need to reorder. This is a good one.**.
+
+44. `f_diff_imp_aport_reemb_var33_ult1`: Difference between "imp_aport_var33_ult1  and  "imp_reemb_var33_ult1". **No need to reorder**.
+
+45. `f_change_var2_NA_2`: Change the missing values (-999999) in var3 to 2. This is suggested in the forum.
+
+46. `f_change_var2_NA_3`: Change the missing values (-999999) in var3 to 3. I think this is more reasonable.
+
+47. `f_change_var_delat_NA_neg_05`: Change the missing value (NA) to -0.5. I think this is more reasonable.
+
+48~50. `f_three_patterns`: Top patterns for the pasted versions of "ind", "delta" and "num" with exactly three levels. **Result based on ratio, so CV is not honest if these are used.**
+
+51. `f_diff_num_var30_42`: The differenec between num30 and num 42. **There are more than 50000 non zero entries**.
+
+52 `f_diff_num_var30_4`: **More than 40000 non zero entries**
+
+53 `f_diff_num_var30_0_42_0` **Perfect feature!!! more than 50000 non zero, and the pattern is clear!!!!!**
+
+54. `f_diff_saldo_var30_42`.**Perfect feature!!!! More than 50000 non zero, and the pattern is clear!!!**
+
+55. `f_diff_var36_38`. **Perfect feature!!!! More than 50000 non zero, and the pattern is clear!!! The result is similar with f_diff_saldo_var30_42.**
+
+56. `f_diff_saldo_var5_30`.**Perfect feature!!!! More than 50000 non zero, and the pattern is clear!!!**
+
+57. `f_diff_saldo_var5_42`.**Perfect feature!!!! More than 50000 non zero, and the pattern is clear!!!**
+
+58. `f_diff_num_var22_ult3_num_med_var45_ult3`. Similar with before, the porabala shape.
+
+59. `f_diff_saldo_var5_saldo_medio_var5_hace2`.**Perfect feature!!!! More than 50000 non zero, and the pattern is clear!!!**
+
+60. `f_diff_saldo_var5_saldo_medio_var5_hace3`. **Perfect feature!!!! More than 50000 non zero, and the pattern is clear!!!**
+
+61. `f_diff_saldo_var5_saldo_medio_var5_ult1`.**Perfect feature!!!! More than 50000 non zero, and the pattern is clear!!!**
+
+62. `f_diff_saldo_medio_var5_hace2_saldo_medio_var5_ult1`.**Perfect feature!!!! More than 50000 non zero, and the pattern is clear!!!**
+
+63. `f_diff_saldo_medio_var5_hace3_saldo_medio_var5_ult3`.**Perfect feature!!!! More than 50000 non zero, and the pattern is clear!!!**
+
+64. `f_diff_var_15_var_38`. **Perfect feature!!!! More than 50000 non zero, and the pattern is clear!!!**
+
+65. `f_diff_var_15_var_36_less_60`.**Perfect feature!!!! More than 50000 non zero, and the pattern is clear!!!**
+
+66. 

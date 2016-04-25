@@ -1,0 +1,1 @@
+This three features are based on the "pasted" patterns of ind variable, delta variable and the num variable with less than 4 different levels. 

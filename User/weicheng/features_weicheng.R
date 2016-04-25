@@ -77,3 +77,45 @@ f_var38_ratio <- function(trn, tst){
 # f_var4 <- function(trn, tst){
 #   
 # }
+
+######### Feature5 ind_ variables ######
+f_ind_comb_rank <- function(trn, tst){
+  nms.ind = grep("^ind_", names(trn), value=TRUE)
+  trn.ind = trn[, nms.ind]
+  tst.ind = tst[, nms.ind]
+  trn$code <- apply(trn.ind, 1, paste0, collapse = "")
+  tst$code <- apply(tst.ind, 1, paste0, collapse = "")
+  tbl = table(trn$code, trn$TARGET)
+  tbl.dt = data.table(code = names(tbl[,1]), n0 = unname(tbl[,1]), n1 = unname(tbl[,2]))
+  tbl.dt = tbl.dt %>% 
+    mutate(n = n0+n1, prob = n1/n)
+  setkey(tbl.dt, code)
+  tbl.dt.good = tbl.dt %>% 
+    filter(n > 80, prob > 0.05) %>%
+    mutate(rank = rank(prob))
+  tbl.dt.bad = tbl.dt %>% 
+    filter(n > 80, prob < 0.02) %>%
+    mutate(rank = -(length(n) + 1 -rank(prob)))
+  
+  f <- function(x){
+    # x= "00001000000000000000000000000001000000000010100000000000"
+    r = tbl.dt.good[x, rank]
+    if(is.na(r))
+      r = tbl.dt.bad[x, rank]
+    if(is.na(r))
+      r = 0
+    r
+  }
+  tbl.dt$ind_comb_rank = sapply(tbl.dt$code, f)
+  tbl.dt = tbl.dt %>% select(code, ind_comb_rank)
+  
+  trn <- trn %>% select(ID, code) %>%
+    left_join(tbl.dt) %>%
+    select(-code)
+    
+  tst <- tst %>% select(ID, code) %>%
+    left_join(tbl.dt) %>%
+    select(-code)
+  tst$ind_comb_rank[is.na(tst$ind_comb_rank)] = 0
+  list(trn = trn, tst = tst)
+}

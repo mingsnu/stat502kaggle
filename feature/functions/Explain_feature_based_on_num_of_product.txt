@@ -1,0 +1,1 @@
+ind_var#_0 represents whether the bank recommended this product to this individual or not, ind_var# represents whether this individual used this product or not, bank tends to recommond product to "good" customers, inspired by this, the total number of products the bank recommended to this individual and how many products this individual actual used is calculated.
