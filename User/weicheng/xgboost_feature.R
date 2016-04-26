@@ -46,8 +46,6 @@ ftrn.nms = grep("train", files, value = TRUE)
 ftst.nms = grep("test", files, value = TRUE)
 if(length(ftrn.nms) != length(ftst.nms))
   error("train and test file number doesn't match!!!!!")
-ftrn = list()
-ftst = list()
 for(i in length(ftrn.nms)){
   cat("Combining features\n")
   ftrn = read.csv(paste0("../../feature/", ftrn.nms[i]))
