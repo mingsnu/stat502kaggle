@@ -400,11 +400,20 @@ xgbst = xgboost(params = xgb_params,
                 scale_pos_weight = optpar4$scale_pos_weight
 )
 
+importance <- xgb.importance(feature_names = x@Dimnames[[2]], model = xgbst)
+head(importance$Feature,10)
+# [1] "var15"                        "saldo_var30"                  "f_diff_var_15_var_36_less_60" "var38"                       
+# [5] "f_num_0_sum_num"              "f_diff_var36_38"              "saldo_medio_var5_hace3"       "f_num_non_zero_sum_saldo"    
+# [9] "f_diff_var_15_var_38"         "saldo_medio_var5_hace2"   
+xgb.plot.importance(importance_matrix = importance[1:100])
 
 ## ## For test data
 x.tst = Matrix(as.matrix(tst[, -1]), sparse = TRUE)
 y.tst.pred = predict(xgbst, x.tst)
 res.df = data.frame(ID = tst$ID, TARGET = y.tst.pred)
+res.df$ID = as.integer(res.df$ID)
 head(res.df)
-plot(res.df$TARGET, aa$TARGET)
-write.csv(res.df, "../../submission/sumision_xgboost0420_3.csv", row.names = FALSE, quote = FALSE)
+# plot(res.df$TARGET, aa$TARGET)
+write.csv(res.df, "../../submission/sumision_xgboost0425.csv", row.names = FALSE, quote = FALSE)
+
+
