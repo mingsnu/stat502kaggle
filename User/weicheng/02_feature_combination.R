@@ -18,8 +18,6 @@ trn$n0 = NULL
 # f2 = f_var38_peak(trn, tst)
 # f3 = f_var38_ratio(trn, tst)
 # f5 = f_ind_comb_rank(trn, tst)
-# y = trn$TARGET
-# trn$TARGET = NULL
 # trn = trn %>% select(ID) %>% left_join(f1$trn) %>% left_join(f2$trn) %>% left_join(f3$trn) %>% left_join(f5$trn)
 # tst = tst %>% select(ID) %>% left_join((f1$tst)) %>% left_join((f2$tst)) %>% left_join((f3$tst)) %>% left_join(f5$tst)
 # 
@@ -49,8 +47,7 @@ files = list.files("../../feature")
 ftrn.nms = grep("train", files, value = TRUE)
 ftst.nms = grep("test", files, value = TRUE)
 if(length(ftrn.nms) != length(ftst.nms))
-  
-  error("train and test file number doesn't match!!!!!")
+  stop("train and test file number doesn't match!!!!!")
 trn = trn %>% select(ID)
 tst = tst %>% select(ID)
 for(i in 1:length(ftrn.nms)){

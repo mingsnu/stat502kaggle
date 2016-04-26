@@ -1,17 +1,31 @@
 library(dplyr)
 library(data.table)
+library(np)
 
 ######### Feature1 var15 ##########
 f_var15_ratio <- function(trn, tst){
   r <- trn %>% select(var15, TARGET) %>% 
     group_by(var15) %>%
-    summarise(var15_ratio = sum(TARGET)/length(TARGET))
+    summarise(n = length(TARGET), var15_ratio = sum(TARGET)/n)
+  r1 = r %>% filter(var15 >= 23, var15 <= 70)
+  r2 = r %>% filter(var15 >= 71, var15 <= 80)
+  r3 = r %>% filter(var15 >= 81, var15 <= 90)
+  r4 = r %>% filter(var15 >= 91)
+  reg = npreg(var15_ratio ~ var15, bws= 3,data = r1)
+  p0 = rep(0, sum(r$var15 <= 22))
+  p1 = fitted(reg)
+  p2 = rep(mean(r2$var15_ratio), nrow(r2))
+  p3 = rep(mean(r3$var15_ratio), nrow(r3))
+  p4 = rep(mean(r4$var15_ratio), nrow(r4))
+  r <- r %>% select(-n) %>% 
+    mutate(var15_ratio = c(p0, p1, p2, p3, p4))
   trn <- trn %>% select(ID, var15) %>%
     left_join(r) %>%
     select(-var15)
   tst <- tst %>% select(ID, var15) %>%
     left_join(r) %>%
     select(-var15)
+  tst$var15_ratio[is.na(tst$var15_ratio)] = 0
   list(trn = trn, tst = tst)
 }
 # res = f_var15(trn, tst)
