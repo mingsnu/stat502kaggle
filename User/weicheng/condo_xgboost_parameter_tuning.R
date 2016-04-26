@@ -6,8 +6,8 @@ library(readr)
 library(dplyr)
 library(tidyr)
 
-trn = readRDS("../data/train_clean.rds")
-tst = readRDS("../data/test_clean.rds")
+trn = readRDS("train_clean.RDS")
+tst = readRDS("test_clean.RDS")
 
 ftrn = read.csv("../../feature/feature_all_train.csv")
 ftst = read.csv("../../feature/feature_all_test.csv")

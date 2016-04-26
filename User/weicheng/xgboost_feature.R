@@ -9,59 +9,16 @@ library(tidyr)
 trn = readRDS("train_clean.RDS")
 tst = readRDS("test_clean.RDS")
 
-# source("features_weicheng.R")
-# f1 = f_var15_ratio(trn, tst)
-# f2 = f_var38_peak(trn, tst)
-# f3 = f_var38_ratio(trn, tst)
-# f5 = f_ind_comb_rank(trn, tst)
-# y = trn$TARGET
-# trn$TARGET = NULL
-# trn = trn %>% left_join(f1$trn) %>% left_join(f2$trn) %>% left_join(f3$trn) %>% left_join(f5$trn)
-# tst = tst %>% left_join((f1$tst)) %>% left_join((f2$tst)) %>% left_join((f3$tst)) %>% left_join(f5$tst)
-
-# write.csv(trn[, c("ID", "var15_ratio", "var_38_peak", "var38_ratio", "ind_comb_rank")], "../../feature/feature_weich_ensample_train.csv",
-#           row.names = FALSE, quote=FALSE)
-# write.csv(tst[, c("ID", "var15_ratio", "var_38_peak", "var38_ratio", "ind_comb_rank")], "../../feature/feature_weich_ensample_test.csv",
-#           row.names = FALSE, quote=FALSE)
-
-# ## hejian's feature
-# aa = trn %>% select(ID) %>% left_join(read.csv("../../feature/numberofnot0balance_train.csv")) %>%
-#   left_join(read.csv("../../feature/quantilediffbalance_train.csv")) %>%
-#   left_join(read.csv("../../feature/quantileratiobalance_tain.csv")) %>%
-#   left_join(read.csv("../../feature/numberofnot0num_train.csv")) %>%
-#   left_join(read.csv("../../feature/quantilediffnum_train.csv")) %>%
-#   left_join(read.csv("../../feature/quantilerationum_tain.csv"))
-# write.csv(aa, "../../feature/feature_hj_ensample_train.csv")
-# 
-# bb = trn %>% select(ID) %>% left_join(read.csv("../../feature/numberofnot0balance_test.csv")) %>%
-#   left_join(read.csv("../../feature/quantilediffbalance_test.csv")) %>%
-#   left_join(read.csv("../../feature/quantileratiobalance_tain.csv")) %>%
-#   left_join(read.csv("../../feature/numberofnot0num_test.csv")) %>%
-#   left_join(read.csv("../../feature/quantilediffnum_test.csv")) %>%
-#   left_join(read.csv("../../feature/quantilerationum_tain.csv"))
-# write.csv(bb, "../../feature/feature_hj_ensample_test.csv")
-
-files = list.files("../../feature")
-ftrn.nms = grep("train", files, value = TRUE)
-ftst.nms = grep("test", files, value = TRUE)
-if(length(ftrn.nms) != length(ftst.nms))
-  error("train and test file number doesn't match!!!!!")
-for(i in length(ftrn.nms)){
-  cat("Combining features\n")
-  ftrn = read.csv(paste0("../../feature/", ftrn.nms[i]))
-  ftst = read.csv(paste0("../../feature/", ftst.nms[i]))
-  trn = left_join(trn, ftrn)
-  tst = left_join(tst, ftst)
-}
-
+ftrn = read.csv("../../feature/feature_all_train.csv")
+ftst = read.csv("../../feature/feature_all_test.csv")
+trn = left_join(trn, ftrn)
+tst = left_join(tst, ftst)
 y = trn$TARGET
-trn$TARGET = NULL
+trn$TARGET=NULL
 x = Matrix(as.matrix(trn[, -1]), sparse = TRUE)
 
 
-xg_auc = read.csv("xgboost_PS2.csv")
-tail(xg_auc[order(xg_auc$auc_max),], 20)
-optpar = xg_auc[which.max(xg_auc$auc_max),]
+
 optpar = data.frame(Rounds=1000, Depth = 5, r_sample = 0.683, c_sample = 0.7, eta =0.0203,
                     scale_pos_weight = 1, best_round = 488)
 optpar = data.frame(Rounds=2000, Depth = 5, r_sample = 0.68, c_sample = 0.68, eta =0.01,
