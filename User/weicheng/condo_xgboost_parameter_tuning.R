@@ -29,51 +29,71 @@ x = Matrix(as.matrix(trn[, -1]), sparse = TRUE)
 ### Step 1: Tuning `max_depth` and `min_child_weight`
 cat("Step1: Tuning max_depth and min_child\n")
 if(!exists("tuning/xg_auc1.csv")){
+
+### initial parameters
+ROUNDS = 3000
+DEPTH = c(3, 4, 5, 6)
+MCW = c(0.5, 1, 2, 3, 4)
+RSAMPLE = 0.7
+CSAMPLE = 0.7
+ETA =  0.1
+SPWEIGHT = 1
+GAMMA = 0
+
   xgb_params = list(
     objective = "binary:logistic",    # binary classification
-    eta = 0.1,       # learning rate
+    eta = ETA,       # learning rate
     # max_depth = 5,      # max tree depth
     # min_child_weight = 1,
-    subsample = 0.8,
-    colsample_bytree = 0.8,
-    gamma = 0,
+    subsample = RSAMPLE,
+    colsample_bytree = CSAMPLE,
+    gamma = GAMMA,
     eval_metric = "auc"     # evaluation/auc metric
   )
+
+xg_auc1 = data.frame("Depth" = numeric(),
+                    "Min_child_weight" = numeric(),
+                    "r_sample" = numeric(),
+                    "c_sample" = numeric(), 
+                    "eta" = numeric(),
+                    "scale_pos_weight" = numeric(),
+                    "gamma" = numeric(),
+                    "auc_max" = numeric(),
+                    "std" = numeric(),
+                    "best_round" = numeric())
   
-  xg_auc1 = data.frame("Depth" = numeric(),
-                       "Min_child_weight" = numeric(),
-                       "auc_max" = numeric(),
-                       "std" = numeric(),
-                       "best_round" = numeric())
-  for(depth in c(3, 4, 5, 6))
-    for(mcw in c(0.5, 1, 2, 3, 4)){
+    for(mcw in MCW){
       xgb_cv = xgb.cv(params = xgb_params,
                       data = x,
                       label = y,
                       max_depth = depth,
-                      nrounds = 2000, 
+                      nrounds = ROUNDS, 
                       nfold = NFOLD,                                                   # number of folds in K-fold
                       stratified = TRUE,                                           # sample is unbalanced; use stratified sampling
                       verbose = FALSE,
                       print.every.n = 1, 
                       early.stop.round = 50,
                       min_child_weight = mcw,
-                      scale_pos_weight = 1  ## rate of 0/1
+                      scale_pos_weight = SPWEIGHT  ## rate of 0/1
       )
       m = xgb_cv$test.auc.mean
       std = xgb_cv$test.auc.std
-      idx = order(m, decreasing = TRUE)[1:3]
-      m.top3  = m[idx]
+      idx = order(m, decreasing = TRUE)[1:5]
+      m.top5  = m[idx]
       std.top3 = std[idx]
-      n.top3 = which(m %in% m.top3)
+      n.top5 = which(m %in% m.top5)
       
-      print(paste(depth, mcw, mean(m.top3), mean(std.top3)))
+      print(paste(depth, mcw, mean(m.top5), mean(std.top5)))
       xg_auc1[nrow(xg_auc1)+1, ] = c(depth, 
                                      mcw,
-                                     # max(xgb_cv$dt$test.auc.mean), 
-                                     mean(m.top3), 
-                                     mean(std.top3),
-                                     mean(n.top3))
+                                     RSAMPLE,
+                                     CSAMPLE,
+                                     ETA,
+                                     SPWEIGHT,
+                                     GAMMA,
+                                     mean(m.top5), 
+                                     mean(std.top5),
+                                     mean(n.top5))
     }
   write.csv(xg_auc1, "tuning/xg_auc1.csv", row.names = FALSE, quote = FALSE)
 }
@@ -82,48 +102,64 @@ if(!exists("tuning/xg_auc1.csv")){
 ### Step 2: Tuning `gamma`
 cat("Step2: Tuning gamma\n")
 if(!exists("tuning/xg_auc2.csv")){
+
+GAMMA = c(seq(0, 1, by=0.1), 2, 5)
+
   xg_auc1 = read.csv("tuning/xg_auc1.csv")
   optpar1 = xg_auc1[which.max(xg_auc1$auc_max),]
   xgb_params = list(
     objective = "binary:logistic",    # binary classification
-    eta = 0.1,       # learning rate
+    eta = ETA,       # learning rate
     max_depth = optpar1$Depth,      # max tree depth
     min_child_weight = optpar1$Min_child_weight,
-    subsample = 0.8,
-    colsample_bytree = 0.8,
-    # gamma = 0,
+    subsample = RSAMPLE,
+    colsample_bytree = CSAMPLE,
+#    gamma = GAMMA,
     eval_metric = "auc"     # evaluation/auc metric
   )
-  
-  xg_auc2 = data.frame("gamma" = numeric(),
-                       "auc_max" = numeric(),
-                       "std" = numeric(),
-                       "best_round" = numeric())
-  for(gamma in seq(0, 1, by=0.1)){
+
+xg_auc2 = data.frame("Depth" = numeric(),
+                    "Min_child_weight" = numeric(),
+                    "r_sample" = numeric(),
+                    "c_sample" = numeric(), 
+                    "eta" = numeric(),
+                    "scale_pos_weight" = numeric(),
+                    "gamma" = numeric(),
+                    "auc_max" = numeric(),
+                    "std" = numeric(),
+                    "best_round" = numeric())
+
+  for(gamma in GAMMA){
     xgb_cv = xgb.cv(params = xgb_params,
                     data = x,
                     label = y,
                     gamma = gamma,
-                    nrounds = 2000, 
+                    nrounds = ROUNDS, 
                     nfold = NFOLD,                                                   # number of folds in K-fold
                     stratified = TRUE,                                           # sample is unbalanced; use stratified sampling
                     verbose = FALSE,
                     print.every.n = 1, 
                     early.stop.round = 50,
-                    scale_pos_weight = 1  ## rate of 0/1
+                    scale_pos_weight = SPWEIGHT  ## rate of 0/1
     )
       m = xgb_cv$test.auc.mean
       std = xgb_cv$test.auc.std
-      idx = order(m, decreasing = TRUE)[1:3]
-      m.top3  = m[idx]
-      std.top3 = std[idx]
-      n.top3 = which(m %in% m.top3)
+      idx = order(m, decreasing = TRUE)[1:5]
+      m.top5  = m[idx]
+      std.top5 = std[idx]
+      n.top5 = which(m %in% m.top5)
 
-    print(paste(gamma, mean(m.top3), mean(std.top3)))
-    xg_auc2[nrow(xg_auc2)+1, ] = c(gamma,
-                                     mean(m.top3), 
-                                     mean(std.top3),
-                                     mean(n.top3))
+    print(paste(gamma, mean(m.top5), mean(std.top5)))
+      xg_auc2[nrow(xg_auc2)+1, ] = c(optpar1$Depth, 
+                                     optpar1$Min_child_weight,
+                                     RSAMPLE,
+                                     CSAMPLE,
+                                     ETA,
+                                     SPWEIGHT,
+                                     gamma,
+                                     mean(m.top5), 
+                                     mean(std.top5),
+                                     mean(n.top5))
   }
   write.csv(xg_auc2, "tuning/xg_auc2.csv", row.names = FALSE, quote = FALSE)
 }
@@ -131,54 +167,69 @@ if(!exists("tuning/xg_auc2.csv")){
 #### Step3: Tuning `subsample` and `colsample_bytree`
 cat("Step3: Tuning `subsample` and `colsample_bytree`\n")
 if(!exists("tuning/xg_auc3.csv")){
+
+RSAMPLE = seq(0.5, 0.8, by=0.05)
+CSAMPLE = seq(0.3, 0.8, by=0.05)
+
   xg_auc1 = read.csv("tuning/xg_auc1.csv")
   xg_auc2 = read.csv("tuning/xg_auc2.csv")
   optpar1 = xg_auc1[which.max(xg_auc1$auc_max),]
   optpar2 = xg_auc2[which.max(xg_auc2$auc_max),]
   xgb_params = list(
     objective = "binary:logistic",    # binary classification
-    eta = 0.1,       # learning rate
+    eta = ETA,       # learning rate
     max_depth = optpar1$Depth,      # max tree depth
     min_child_weight = optpar1$Min_child_weight,
-    # subsample = 0.8,
-    # colsample_bytree = 0.8,
+#    subsample = RSAMPLE,
+#    colsample_bytree = CSAMPLE,
     gamma = optpar2$gamma,
     eval_metric = "auc"     # evaluation/auc metric
   )
-  
-  xg_auc3 = data.frame("r_sample" = numeric(),
-                       "c_sample" = numeric(), 
-                       "auc_max" = numeric(),
-                       "std" = numeric(),
-                       "best_round" = numeric())
-  for(r_sample in seq(0.5, 0.8, by=0.05))
-    for(c_sample in seq(0.4, 0.8, by=0.05)){
+
+xg_auc3 = data.frame("Depth" = numeric(),
+                    "Min_child_weight" = numeric(),
+                    "r_sample" = numeric(),
+                    "c_sample" = numeric(), 
+                    "eta" = numeric(),
+                    "scale_pos_weight" = numeric(),
+                    "gamma" = numeric(),
+                    "auc_max" = numeric(),
+                    "std" = numeric(),
+                    "best_round" = numeric())  
+  for(r_sample in RSAMPLE)
+    for(c_sample in CSAMPLE){
       xgb_cv = xgb.cv(params = xgb_params,
                       data = x,
                       label = y,
                       subsample = r_sample,
                       colsample_bytree = c_sample,
-                      nrounds = 2000, 
+                      nrounds = ROUNDS, 
                       nfold = NFOLD,                                                   # number of folds in K-fold
                       stratified = TRUE,                                           # sample is unbalanced; use stratified sampling
                       verbose = FALSE,
                       print.every.n = 1, 
                       early.stop.round = 50,
-                      scale_pos_weight = 1  ## rate of 0/1
+                      scale_pos_weight = SPWEIGHT  ## rate of 0/1
       )
 
       m = xgb_cv$test.auc.mean
       std = xgb_cv$test.auc.std
-      idx = order(m, decreasing = TRUE)[1:3]
-      m.top3  = m[idx]
-      std.top3 = std[idx]
-      n.top3 = which(m %in% m.top3)
+      idx = order(m, decreasing = TRUE)[1:5]
+      m.top5  = m[idx]
+      std.top5 = std[idx]
+      n.top5 = which(m %in% m.top5)
       
-      print(paste(r_sample, c_sample, mean(m.top3), mean(std.top3)))
-      xg_auc3[nrow(xg_auc3)+1, ] = c(r_sample, c_sample,
-                                     mean(m.top3), 
-                                     mean(std.top3),
-                                     mean(n.top3))
+      print(paste(r_sample, c_sample, mean(m.top5), mean(std.top5)))
+      xg_auc3[nrow(xg_auc3)+1, ] = c(optpar1$Depth, 
+                                     optpar1$Min_child_weight,
+                                     r_sample,
+                                     c_sample,
+                                     ETA,
+                                     SPWEIGHT,
+                                     optpar2$gamma,
+                                     mean(m.top5), 
+                                     mean(std.top5),
+                                     mean(n.top5))
     }
   write.csv(xg_auc3, "tuning/xg_auc3.csv", row.names = FALSE, quote = FALSE)
 }
@@ -186,6 +237,7 @@ if(!exists("tuning/xg_auc3.csv")){
 #### Step4: Tuning scale_pos_weight
 cat("Step4: Tuning scale_pos_weight\n")
 if(!exists("tuning/xg_auc4.csv")){
+SPWEIGHT = c(0.5, 1, 2, 3, 4)
   xg_auc1 = read.csv("tuning/xg_auc1.csv")
   xg_auc2 = read.csv("tuning/xg_auc2.csv")
   xg_auc3 = read.csv("tuning/xg_auc3.csv")
@@ -194,7 +246,7 @@ if(!exists("tuning/xg_auc4.csv")){
   optpar3 = xg_auc3[which.max(xg_auc3$auc_max),]
   xgb_params = list(
     objective = "binary:logistic",    # binary classification
-    eta = 0.1,       # learning rate
+    eta = ETA,       # learning rate
     max_depth = optpar1$Depth,      # max tree depth
     min_child_weight = optpar1$Min_child_weight,
     subsample = optpar3$r_sample,
@@ -202,16 +254,22 @@ if(!exists("tuning/xg_auc4.csv")){
     gamma = optpar2$gamma,
     eval_metric = "auc"     # evaluation/auc metric
   )
-  
-  xg_auc4 = data.frame("scale_pos_weight"= numeric(),
-                       "auc_max" = numeric(),
-                       "std" = numeric(),
-                       "best_round" = numeric())
-  for(sp_weight in c(0.5, 1, 2, 3, 4)){
+
+xg_auc4 = data.frame("Depth" = numeric(),
+                    "Min_child_weight" = numeric(),
+                    "r_sample" = numeric(),
+                    "c_sample" = numeric(), 
+                    "eta" = numeric(),
+                    "scale_pos_weight" = numeric(),
+                    "gamma" = numeric(),
+                    "auc_max" = numeric(),
+                    "std" = numeric(),
+                    "best_round" = numeric())  
+  for(sp_weight in SPWEIGHT){
     xgb_cv = xgb.cv(params = xgb_params,
                     data = x,
                     label = y,
-                    nrounds = 2000, 
+                    nrounds = ROUNDS, 
                     nfold = NFOLD,                                                   # number of folds in K-fold
                     stratified = TRUE,                                           # sample is unbalanced; use stratified sampling
                     verbose = FALSE,
@@ -222,24 +280,33 @@ if(!exists("tuning/xg_auc4.csv")){
 
       m = xgb_cv$test.auc.mean
       std = xgb_cv$test.auc.std
-      idx = order(m, decreasing = TRUE)[1:3]
-      m.top3  = m[idx]
-      std.top3 = std[idx]
-      n.top3 = which(m %in% m.top3)
+      idx = order(m, decreasing = TRUE)[1:5]
+      m.top5  = m[idx]
+      std.top5 = std[idx]
+      n.top5 = which(m %in% m.top5)
       
-    print(paste(sp_weight, mean(m.top3), mean(std.top3)))
-    xg_auc4[nrow(xg_auc4)+1, ] = c(sp_weight,
-                                   # max(xgb_cv$dt$test.auc.mean),
-                                     mean(m.top3), 
-                                     mean(std.top3),
-                                     mean(n.top3))
+    print(paste(sp_weight, mean(m.top5), mean(std.top5)))
+      xg_auc4[nrow(xg_auc4)+1, ] = c(optpar1$Depth, 
+                                     optpar1$Min_child_weight,
+                                     optpar3$r_sample,
+                                     optpar3$c_sample,
+                                     ETA,
+                                     sp_weight,
+                                     optpar2$gamma,
+                                     mean(m.top5), 
+                                     mean(std.top5),
+                                     mean(n.top5))
   }
   write.csv(xg_auc4, "tuning/xg_auc4.csv", row.names = FALSE, quote = FALSE)
 }
 
 #### Step5: Tuning learning rate
 cat("Step5: Tuning learning rate\n")
+
 if(!exists("tuning/xg_auc5.csv")){
+
+ETA = seq(0.01, 0.025, by = 0.002)
+
   xg_auc1 = read.csv("tuning/xg_auc1.csv")
   xg_auc2 = read.csv("tuning/xg_auc2.csv")
   xg_auc3 = read.csv("tuning/xg_auc3.csv")
@@ -258,17 +325,22 @@ if(!exists("tuning/xg_auc5.csv")){
     gamma = optpar2$gamma,
     eval_metric = "auc"     # evaluation/auc metric
   )
-  
-  xg_auc5 = data.frame("eta"= numeric(),
-                       "auc_max" = numeric(),
-                       "std" = numeric(),
-                       "best_round" = numeric())
-  for(eta in seq(0.01, 0.025, by = 0.002)){
+xg_auc5 = data.frame("Depth" = numeric(),
+                    "Min_child_weight" = numeric(),
+                    "r_sample" = numeric(),
+                    "c_sample" = numeric(), 
+                    "eta" = numeric(),
+                    "scale_pos_weight" = numeric(),
+                    "gamma" = numeric(),
+                    "auc_max" = numeric(),
+                    "std" = numeric(),
+                    "best_round" = numeric())  
+  for(eta in ETA){
     xgb_cv = xgb.cv(params = xgb_params,
                     data = x,
                     label = y,
                     eta = eta,
-                    nrounds = 2000, 
+                    nrounds = ROUNDS, 
                     nfold = NFOLD,                                                   # number of folds in K-fold
                     stratified = TRUE,                                           # sample is unbalanced; use stratified sampling
                     verbose = FALSE,
@@ -278,16 +350,22 @@ if(!exists("tuning/xg_auc5.csv")){
     )
       m = xgb_cv$test.auc.mean
       std = xgb_cv$test.auc.std
-      idx = order(m, decreasing = TRUE)[1:3]
-      m.top3  = m[idx]
-      std.top3 = std[idx]
-      n.top3 = which(m %in% m.top3)
+      idx = order(m, decreasing = TRUE)[1:5]
+      m.top5  = m[idx]
+      std.top5 = std[idx]
+      n.top5 = which(m %in% m.top5)
       
-    print(paste(eta, mean(m.top3), mean(std.top3)))
-    xg_auc5[nrow(xg_auc5)+1, ] = c(eta,
-                                     mean(m.top3), 
-                                     mean(std.top3),
-                                     mean(n.top3))
+    print(paste(eta, mean(m.top5), mean(std.top5)))
+      xg_auc5[nrow(xg_auc5)+1, ] = c(optpar1$Depth, 
+                                     optpar1$Min_child_weight,
+                                     optpar3$r_sample,
+                                     optpar3$c_sample,
+                                     eta,
+                                     optpar4$scale_pos_weight,
+                                     optpar2$gamma,
+                                     mean(m.top5), 
+                                     mean(std.top5),
+                                     mean(n.top5))
   }
   write.csv(xg_auc5, "tuning/xg_auc5.csv", row.names = FALSE, quote = FALSE)
 }
