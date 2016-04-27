@@ -1,12 +1,18 @@
+library(Matrix)
+library(xgboost)
+library(caTools)
+library(caret)
+library(readr)
+library(dplyr)
+library(tidyr)
 
-#########################
 trn = readRDS("train_clean.RDS")
 tst = readRDS("test_clean.RDS")
-ftrn = read.csv("../../feature/feature_all_train.csv")
-ftst = read.csv("../../feature/feature_all_test.csv")
+
+ftrn = read.csv("../../feature/feature_all_train_ratio_only_wc_99.csv")
+ftst = read.csv("../../feature/feature_all_test_ratio_only_wc_99.csv")
 trn = left_join(trn, ftrn)
 tst = left_join(tst, ftst)
-
 y = trn$TARGET
 trn$TARGET=NULL
 x = Matrix(as.matrix(trn[, -1]), sparse = TRUE)
@@ -96,4 +102,4 @@ res.df = data.frame(ID = tst$ID, TARGET = y.tst.pred)
 res.df$ID = as.integer(res.df$ID)
 head(res.df)
 # plot(res.df$TARGET, aa$TARGET)
-write.csv(res.df, "../../submission/sumision_xgboost0426_2.csv", row.names = FALSE, quote = FALSE)
+write.csv(res.df, "../../submission/sumision_xgboost0426_3.csv", row.names = FALSE, quote = FALSE)

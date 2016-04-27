@@ -9,8 +9,8 @@ library(tidyr)
 trn = readRDS("train_clean.RDS")
 tst = readRDS("test_clean.RDS")
 
-ftrn = read.csv("../../feature/feature_all_train.csv")
-ftst = read.csv("../../feature/feature_all_test.csv")
+ftrn = read.csv("../../feature/feature_all_train_ratio_only_wc_99.csv")
+ftst = read.csv("../../feature/feature_all_test_ratio_only_wc_99.csv")
 trn = left_join(trn, ftrn)
 tst = left_join(tst, ftst)
 y = trn$TARGET
