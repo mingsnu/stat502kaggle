@@ -2,8 +2,13 @@
 ##### Removing IDs
 trn = readRDS("train_clean.RDS")
 tst = readRDS("test_clean.RDS")
-trn[is.na(trn)] = -999
-tst[is.na(tst)] = -999
+# trn[is.na(trn)] = -999
+# tst[is.na(tst)] = -999
+
+ftrn = read.csv("../../feature/feature_all_train_ratio_only_wc_99.csv")
+ftst = read.csv("../../feature/feature_all_test_ratio_only_wc_99.csv")
+trn = left_join(trn, ftrn %>% select(ID, ind_comb_rank))
+tst = left_join(tst, ftst %>% select(ID, ind_comb_rank))
 
 ##### Removing IDs
 trn$ID <- NULL
@@ -14,12 +19,12 @@ tst$ID <- NULL
 trn.y <- trn$TARGET
 trn$TARGET <- NULL
 
-##### 0 count per line
-count0 <- function(x) {
-  return( sum(x == 0) )
-}
-trn$n0 <- apply(trn, 1, FUN=count0)
-tst$n0 <- apply(tst, 1, FUN=count0)
+# ##### 0 count per line
+# count0 <- function(x) {
+#   return( sum(x == 0) )
+# }
+# trn$n0 <- apply(trn, 1, FUN=count0)
+# tst$n0 <- apply(tst, 1, FUN=count0)
 
 
 # trn$TARGET <- trn.y
@@ -27,7 +32,7 @@ tst$n0 <- apply(tst, 1, FUN=count0)
 
 trn = Matrix(as.matrix(trn))
 
-dtrain <- xgb.DMatrix(data=trn, label=trn.y)
+dtrain <- xgb.DMatrix(data=trn, label=trn.y, missing = -999)
 watchlist <- list(trn=dtrain)
 param <- list(  objective           = "binary:logistic", 
                 booster             = "gbtree",
@@ -40,11 +45,10 @@ param <- list(  objective           = "binary:logistic",
 
 clf <- xgboost(params = param,
                data = dtrain,
-               label = y,
                nrounds = 500,    # max number of trees to build
                verbose = TRUE,                                         
                print.every.n = 1,
-               early.stop.round = 0.1*optpar$Rounds
+               early.stop.round = 30
 )
 
 clf1 <- xgb.train(   params              = param, 
