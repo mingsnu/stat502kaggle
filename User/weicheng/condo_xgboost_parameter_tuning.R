@@ -79,7 +79,7 @@ if(!exists("tuning/xg_auc1.csv")){
       std = xgb_cv$test.auc.std
       idx = order(m, decreasing = TRUE)[1:5]
       m.top5  = m[idx]
-      std.top3 = std[idx]
+      std.top5 = std[idx]
       n.top5 = which(m %in% m.top5)
       
       print(paste(depth, mcw, mean(m.top5), mean(std.top5)))
