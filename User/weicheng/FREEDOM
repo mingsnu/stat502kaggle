@@ -15,12 +15,12 @@
 # If you want the output to go to another file, change BATCH_OUTPUT 
 # or BATCH_ERRORS in the following lines to the full path of that file. 
 
-#PBS  -o BATCH_OUTPUT_hexiehao_no_ratio
-#PBS  -e BATCH_ERRORS_hexiehao_no_ratio
+#PBS  -o BATCH_OUTPUT_FREEDOM
+#PBS  -e BATCH_ERRORS_FREEDOM
 
-#PBS -lnodes=1:ppn=16:compute,walltime=100:00:00
+#PBS -lnodes=1:ppn=16:compute,walltime=72:00:00
 
 # Change to directory from which qsub command was issued 
 cd $PBS_O_WORKDIR
 
-Rscript 03_xgboost_hexiehao_no_ratio.R 10
+Rscript 03_xgboost_freedom.R 20 6
