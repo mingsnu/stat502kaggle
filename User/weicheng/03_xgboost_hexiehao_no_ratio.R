@@ -25,7 +25,7 @@ trn = data.table(trn)
 
 trn.y = trn$TARGET
 impVars = readRDS("impVars.rds")
-# impVars = setdiff(impVars, c("var15_ratio", "var38_ratio"))
+impVars = setdiff(impVars, c("var15_ratio", "var38_ratio"))
 
 #### stratified sampling for training & testing
 set.seed(20160428)
@@ -92,7 +92,7 @@ while(1){
   aucStd = c(aucStd, impVars.auc.std[idx])
   res = data.table(ftrSelected, aucMean, aucStd)
   # res = rbindlist(list(res, list(impVars[idx], impVars.auc.mean[idx], impVars.auc.std[idx])))
-  write.csv(res, paste0("tuning/hexiehao_R", R, ".csv"), row.names = FALSE)
+  write.csv(res, paste0("tuning/hexiehao_no_ratio_R", R, ".csv"), row.names = FALSE)
   if(k > 10){
     last10 = res$aucMean[(k-9):k]
     if(sum(sign(diff(last10))) < 0) 
