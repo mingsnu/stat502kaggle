@@ -23,4 +23,4 @@
 # Change to directory from which qsub command was issued 
 cd $PBS_O_WORKDIR
 
-Rscript 03_xgboost_freedom.R 20 6
+Rscript 03_xgboost_freedom.R 18 10

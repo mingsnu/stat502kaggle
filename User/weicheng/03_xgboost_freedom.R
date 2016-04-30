@@ -32,7 +32,7 @@ trn.idx = createDataPartition(y = trn.y, times = R, p = .7)
 
 ############### 
 ## Number of feature to use
-N = 10000
+N = 100000
 M = length(impVars)
 optpar = data.frame(Rounds=2000, Depth = 4, r_sample = 0.8, eta =0.01,
                     best_round = 774 )
@@ -73,7 +73,7 @@ for(i in 1:N){
   if(length(score) == R){
     k = k + 1
     res[k,] = c(ftr, score)
-    write.csv(res, paste0("tuning/freedom_m", m, ".csv"), row.names = FALSE)
+    write.csv(res, paste0("tuning/freedom_m", m, "R_", R, ".csv"), row.names = FALSE)
   }
 }
 
