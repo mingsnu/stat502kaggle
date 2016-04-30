@@ -1,6 +1,13 @@
 #!/usr/bin/env Rscript
 args = commandArgs(trailingOnly=TRUE)
-R = as.numeric(args[1])
+out.name = args[1]
+cat("Out file name:", out.name, "\n")
+ftr.rds = args[2]
+R = as.numeric(args[3])
+if(is.na(ftr.rds))
+  ftrSelected = c("saldo_var30", "var15", "var38") else
+    ftrSelected = readRDS(ftr.rds)
+cat("Initial features: ", ftrSelected, "\n")
 if(is.na(R))
   R = 5
 cat("R: ", R, "\n")
@@ -33,10 +40,9 @@ trn.idx = createDataPartition(y = trn.y, times = R, p = .75)
 
 ####
 optpar = data.frame(Rounds=2000, Depth = 4, r_sample = 0.8, eta =0.01)
-## initial feature. fixed.
-ftrSelected = c("saldo_var30", "var15", "var38")
-aucMean = c(0, 0, 0)
-aucStd = c(0, 0, 0)
+
+aucMean = seq(0,0.8, length=length(ftrSelected))
+aucStd = rep(0.1, length(ftrSelected))
 res = data.table(ftrSelected, aucMean, aucStd)
 k = 1
 while(1){
@@ -92,7 +98,7 @@ while(1){
   aucStd = c(aucStd, impVars.auc.std[idx])
   res = data.table(ftrSelected, aucMean, aucStd)
   # res = rbindlist(list(res, list(impVars[idx], impVars.auc.mean[idx], impVars.auc.std[idx])))
-  write.csv(res, paste0("tuning/hexiehao_R", R, ".csv"), row.names = FALSE)
+  write.csv(res, out.name, row.names = FALSE)
   if(k > 10){
     last10 = res$aucMean[(k-9):k]
     if(sum(sign(diff(last10))) < 0) 

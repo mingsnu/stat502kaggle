@@ -23,4 +23,4 @@
 # Change to directory from which qsub command was issued 
 cd $PBS_O_WORKDIR
 
-Rscript 03_xgboost_hexiehao.R 10
+Rscript 03_xgboost_hexiehao.R tuning/hexiehao_aa_R10.csv features/aa.rds 10

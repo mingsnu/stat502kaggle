@@ -32,13 +32,13 @@ which(fdm$aucMean > 0.835)
 fdm[253, 21:26]
 fdm[27, 21:26]
 fdm[538, 21:26]
-aa = unlist(fdm[253, 1:20])
-bb = unlist(fdm[27, 1:20])
-cc = unlist(fdm[538, 1:20])
+aa = unname(unlist(fdm[253, 1:20]))
+bb = unname(unlist(fdm[27, 1:20]))
+cc = unname(unlist(fdm[538, 1:20]))
 intersect(aa,bb)
 intersect(aa,cc)
 intersect(bb,cc)
-ftrs.list = list(unname(aa), unname(bb), unname(cc))
+ftrs.list = list(aa, bb, cc)
 
 ## choose feature combination by looking at extreme cases
 ftrs.list = list()
@@ -142,23 +142,70 @@ colAUC(apply(testing.pred.df, 1, mean), testing.y)
 ######################################################################
 ########################### For real test data #######################
 ######################################################################
-ftrSelected = unname(aa)
-ftrSelected = unname(bb)
-ftrSelected = unname(cc)
-## ftrSelected = c(ftrSelected, "saldo_medio_var5_hace3", "imp_op_var39_ult1", "f_diff_imp_op_var41_efect_comer_ult1") # test-auc:0.837721+0.000559
-## ftrSelected = setdiff(ftrSelected, c("new_ind_var5_0", "abs_f_diff_num_var30_4"))
-impVars[!impVars %in% cc]
+trn = readRDS("train_clean.RDS")
+tst = readRDS("test_clean.RDS")
+ftrn = read.csv("../../feature/feature_all_train_ratio_only_wc_99.csv")
+ftst = read.csv("../../feature/feature_all_test_ratio_only_wc_99.csv")
+trn = left_join(trn, ftrn)
+tst = left_join(tst, ftst)
+trn = data.table(trn)
+tst = data.table(tst)
+trn.y = trn$TARGET
 
-# varSelected = hexie1$ftrSelected[1:which.max(hexie1$aucMean)]
-ftr.idx = which(names(trn) %in% ftrSelected)
-
-training = trn[, ftr.idx, with=FALSE]
-testing = tst[, ftr.idx, with=FALSE]
-
-dtrain <- xgb.DMatrix(data=Matrix(as.matrix(training), sparse = TRUE), label=trn.y, missing = -999)
-
+#training.pred = list()
+testing.pred = list()
+auc.pred = c()
 optpar = data.frame(Rounds=2000, Depth = 4, r_sample = 0.8, eta =0.01)
+params = list(
+  objective = "binary:logistic", 
+  eta = optpar$eta,    
+  max_depth = optpar$Depth,   
+  subsample = optpar$r_sample,
+  eval_metric = "auc"  
+)
+for(i in 1:length(ftrs.list)){
+  cat("Round ", i, ": \n")
+  ftr.idx = names(trn) %in% ftrs.list[[i]]
+  training = trn[, ftr.idx, with=FALSE]
+  training.y = trn.y
+  testing = tst[, ftr.idx, with=FALSE]
+  training.dat = Matrix(as.matrix(training), sparse = TRUE)
+  testing.dat = Matrix(as.matrix(testing), sparse = TRUE)
+  
+  dtrain <- xgb.DMatrix(data=training.dat, label=training.y, missing = -999)
+  
+  cat("Doing cv ...\n")
+  bst.cv <- xgb.cv(params = params,
+                   data=dtrain,
+                   nfold = 4,
+                   nrounds = 2000,
+                   verbose = 0,
+                   early.stop.round = 20)
+  cat("Fitting model ...\n")
+  bst <- xgboost(params = params,
+                 data=dtrain,
+                 nrounds = which.max(bst.cv$test.auc.mean),
+                 verbose = 0)
+  training.pred[[i]] = predict(bst, training.dat)
+  cat("The predicted AUC value is: ", colAUC(training.pred[[i]], training.y), "\n")
+  testing.pred[[i]] = predict(bst, testing.dat)
+}
+names(testing.pred) = LETTERS[1:length(ftrs.list)]
+testing.pred.df = as.data.frame(testing.pred)
 
+res.df = data.frame(ID = tst$ID, TARGET = apply(testing.pred.df, 1, mean))
+res.df$ID = as.integer(res.df$ID)
+head(res.df)
+# aa = read.csv("submission.csv")
+# plot(res.df$TARGET, aa$TARGET)
+write.csv(res.df, "../../submission/sumision_xgboost0430.csv", row.names = FALSE, quote = FALSE)
+
+
+
+
+###########
+dtrain <- xgb.DMatrix(data=Matrix(as.matrix(training), sparse = TRUE), label=trn.y, missing = -999)
+optpar = data.frame(Rounds=2000, Depth = 4, r_sample = 0.8, eta =0.01)
 print("Train xgboost using xgb.train with watchlist")
 params = list(
   objective = "binary:logistic",
@@ -166,14 +213,12 @@ params = list(
   max_depth = optpar$Depth, 
   subsample = optpar$r_sample,
   eval_metric = "auc")
-
 bst.cv <- xgb.cv(params = params,
                  data=dtrain,
                  nfold = 4,
                  nrounds = 2000,
                  verbose = 1,
                  early.stop.round = 20)
-
 bst <- xgboost(params = params,
                data=dtrain,
                nrounds = 732,
