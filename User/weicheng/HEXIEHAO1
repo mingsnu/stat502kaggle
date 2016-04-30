@@ -15,8 +15,8 @@
 # If you want the output to go to another file, change BATCH_OUTPUT 
 # or BATCH_ERRORS in the following lines to the full path of that file. 
 
-#PBS  -o BATCH_OUTPUT_hexiehao_no_ratio
-#PBS  -e BATCH_ERRORS_hexiehao_no_ratio
+#PBS  -o BATCH_OUTPUT_hexiehao_bb
+#PBS  -e BATCH_ERRORS_hexiehao_bb
 
 #PBS -lnodes=1:ppn=16:compute,walltime=72:00:00
 
