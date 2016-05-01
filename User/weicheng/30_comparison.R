@@ -1,6 +1,13 @@
 #!/usr/bin/env Rscript
 args = commandArgs(trailingOnly=TRUE)
 method = as.numeric(args[1])
+library(Matrix)
+library(xgboost)
+library(caTools)
+library(caret)
+library(dplyr)
+library(data.table)
+
 #fdm = read.csv("tuning/Freedom/freedom_m20.csv", stringsAsFactors = FALSE)
 fdm = read.csv("tuning/freedom_m20R_10.csv", stringsAsFactors = FALSE)
 R = 10
