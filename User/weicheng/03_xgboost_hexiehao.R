@@ -4,12 +4,15 @@ out.name = args[1]
 cat("Out file name:", out.name, "\n")
 ftr.rds = args[2]
 R = as.numeric(args[3])
+
 if(is.na(ftr.rds))
   ftrSelected = c("saldo_var30", "var15", "var38") else
     ftrSelected = readRDS(ftr.rds)
 cat("Initial features: ", ftrSelected, "\n")
 if(is.na(R))
   R = 5
+if(is.na(out.name))
+  out.name = paste0("tuning/hexie_R", R, ".csv")
 cat("R: ", R, "\n")
 library(Matrix)
 library(xgboost)

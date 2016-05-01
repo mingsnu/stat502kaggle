@@ -8,30 +8,44 @@ library(data.table)
 ######################################################################
 ######################## Explore freedom #############################
 ######################################################################
-
+###############################
+###### 1. freedom_m20.csv #####
+###############################
 fdm = read.csv("tuning/Freedom/freedom_m20.csv", stringsAsFactors = FALSE)
-fdm = read.csv("tuning/Freedom/freedom_no_ratio_m20.csv", stringsAsFactors = FALSE)
-
-R = 6
+R=6
 m = ncol(fdm)
 n <- nrow(fdm)
 fdm.auc = fdm[, (m-R+1):m]
 
 ## choose feature combination by using mean value
-fdm$aucMean = apply(fdm[, 21:26], 1, mean)
-fdm$aucStd = apply(fdm[, 21:26], 1, sd)
+fdm$aucMean = apply(fdm.auc, 1, mean)
+fdm$aucStd = apply(fdm.auc, 1, sd)
 head(fdm)
 fdm %>% filter(aucMean > 0.835)
+maxmean.idx = which(fdm$aucMean > 0.835)
+maxmean.n = length(maxmean.idx)
+ftrs.list = list()
+for(i in 1:maxmean.n){
+  ftrs.list[[i]] = unname(unlist(fdm[maxmean.idx[i], 1:20]))
+}
+ftrs.list
+mat = matrix(0, maxmean.n, maxmean.n)
+for(i in 1:(maxmean.n-1))
+  for(j in (i+1):maxmean.n){
+    mat[i,j] = length(intersect(ftrs.list[[i]], ftrs.list[[j]]))
+  }
+mat
 
+    
 ## choose feature combination by looking at # of top 5
 fdm.bestcomb = unlist(lapply(1:R, function(i) which(fdm.auc[,i] %in% sort(fdm.auc[,i])[(n-5):n])))
 fdm.bst.tbl = table(fdm.bestcomb)
-fdm.bst.tbl[which.max(table(fdm.bestcomb))]
-
+fdm[aucMean > 0.835, c(paste0("auc", 1:R)), with=FALSE]
 which(fdm$aucMean > 0.835)
-fdm[253, 21:26]
-fdm[27, 21:26]
-fdm[538, 21:26]
+
+fdm[253, (m-R+1):m]
+fdm[27, (m-R+1):m]
+fdm[538, (m-R+1):m]
 aa = unname(unlist(fdm[253, 1:20]))
 bb = unname(unlist(fdm[27, 1:20]))
 cc = unname(unlist(fdm[538, 1:20]))
@@ -47,6 +61,162 @@ for(i in 1:6){
 }
 ftrs.list
 
+######################################
+###### 2. freedom_no_ratio_m20.csv ###
+######################################
+fdm = read.csv("tuning/Freedom/freedom_no_ratio_m20.csv", stringsAsFactors = FALSE)
+R = 6
+
+##################################
+###### 3. freedom_m20R_10.csv ####
+##################################
+fdm = read.csv("tuning/freedom_m20R_10.csv", stringsAsFactors = FALSE)
+R = 10
+m = ncol(fdm)
+n = nrow(fdm)
+fdm.auc = fdm[, (m-R+1):m]
+
+## choose feature combination by using mean value
+fdm$aucMean = apply(fdm.auc, 1, mean)
+fdm$aucStd = apply(fdm.auc, 1, sd)
+fdm %>% filter(aucMean > 0.835) %>% select(starts_with("auc"))
+maxmean.idx = which(fdm$aucMean > 0.835)
+maxmean.n = length(maxmean.idx)
+ftrs.list = list()
+for(i in 1:maxmean.n){
+  ftrs.list[[i]] = unname(unlist(fdm[maxmean.idx[i], 1:20]))
+}
+ftrs.list
+mat = matrix(0, maxmean.n, maxmean.n)
+for(i in 1:(maxmean.n-1))
+  for(j in (i+1):maxmean.n){
+    mat[i,j] = length(intersect(ftrs.list[[i]], ftrs.list[[j]]))
+  }
+mat
+
+## choose feature combination by looking at # of top 5
+fdm.bestcomb = unlist(lapply(1:R, function(i) which(fdm.auc[,i] %in% sort(fdm.auc[,i])[(n-5):n])))
+fdm.bst.tbl = table(fdm.bestcomb)
+sort(fdm.bst.tbl, decreasing = TRUE)
+top5.idx = as.numeric(names(sort(fdm.bst.tbl, decreasing = TRUE))[1:4])
+fdm[428, (m-R+1):ncol(fdm)]
+fdm[840, (m-R+1):ncol(fdm)]
+fdm[528, (m-R+1):ncol(fdm)]
+fdm[778, (m-R+1):ncol(fdm)]
+aa = unname(unlist(fdm[253, 1:20]))
+bb = unname(unlist(fdm[27, 1:20]))
+cc = unname(unlist(fdm[538, 1:20]))
+intersect(aa,bb)
+intersect(aa,cc)
+intersect(bb,cc)
+ftrs.list = list(aa, bb, cc)
+
+## choose feature combination by looking at extreme cases
+ext.idx = sapply(1:R, function(i) which.max(fdm.auc[,i]))
+ext.idx
+ext.idx %in% maxmean.idx
+ext.idx %in% top5.idx
+
+fdm[ext.idx, (m-R+1):m]
+ftrs.list = list()
+for(i in 1:R){
+  ftrs.list[[i]] = unname(unlist(fdm[which.max(fdm.auc[,i]), 1:20]))
+}
+ftrs.list
+
+
+##################################
+##### 4. freedom_m19R_10.csv #####
+##################################
+fdm = read.csv("tuning/freedom_m19R_10.csv", stringsAsFactors = FALSE)
+R = 10
+m = ncol(fdm)
+n = nrow(fdm)
+fdm.auc = fdm[, (m-R+1):m]
+
+## choose feature combination by using mean value
+fdm$aucMean = apply(fdm.auc, 1, mean)
+fdm$aucStd = apply(fdm.auc, 1, sd)
+fdm %>% filter(aucMean > 0.835) %>% select(starts_with("auc"))
+maxmean.idx = which(fdm$aucMean > 0.835)
+fdm[maxmean.idx, (m-R+1):m]
+
+## choose feature combination by looking at # of top 5
+fdm.bestcomb = unlist(lapply(1:R, function(i) which(fdm.auc[,i] %in% sort(fdm.auc[,i])[(n-5):n])))
+fdm.bst.tbl = table(fdm.bestcomb)
+sort(fdm.bst.tbl, decreasing = TRUE)
+top5.idx = as.numeric(names(sort(fdm.bst.tbl, decreasing = TRUE))[1:4])
+fdm[38, (m-R+1):m]
+fdm[165, (m-R+1):m]
+fdm[86, (m-R+1):m]
+fdm[183, (m-R+1):m]
+aa = unname(unlist(fdm[38, 1:20]))
+bb = unname(unlist(fdm[165, 1:20]))
+
+intersect(aa,bb)
+ftrs.list = list(aa, bb)
+
+## choose feature combination by looking at extreme cases
+ext.idx = sapply(1:R, function(i) which.max(fdm.auc[,i]))
+ext.idx
+ext.idx %in% maxmean.idx
+ext.idx %in% top5.idx
+
+fdm[ext.idx, (m-R+1):m]
+
+ftrs.list = list()
+for(i in 1:R){
+  ftrs.list[[i]] = unname(unlist(fdm[which.max(fdm.auc[,i]), 1:20]))
+}
+ftrs.list
+
+##################################
+##### 5. freedom_m20R_10.csv #####
+##################################
+fdm = read.csv("tuning/freedom_m20R_10.csv", stringsAsFactors = FALSE)
+R = 10
+m = ncol(fdm)
+n = nrow(fdm)
+fdm.auc = fdm[, (m-R+1):m]
+
+## choose feature combination by using mean value
+fdm$aucMean = apply(fdm.auc, 1, mean)
+fdm$aucStd = apply(fdm.auc, 1, sd)
+head(fdm)
+fdm %>% filter(aucMean > 0.835) %>% select(starts_with("auc"))
+maxmean.idx = which(fdm$aucMean > 0.835)
+fdm[maxmean.idx, (m-R+1):m]
+
+## choose feature combination by looking at # of top 5
+fdm.bestcomb = unlist(lapply(1:R, function(i) which(fdm.auc[,i] %in% sort(fdm.auc[,i])[(n-5):n])))
+fdm.bst.tbl = table(fdm.bestcomb)
+sort(fdm.bst.tbl, decreasing = TRUE)
+top5.idx = as.numeric(names(sort(fdm.bst.tbl, decreasing = TRUE))[1:4])
+fdm[428, (m-R+1):m]
+fdm[840, (m-R+1):m]
+fdm[528, (m-R+1):m]
+fdm[778, (m-R+1):m]
+aa = unname(unlist(fdm[253, 1:20]))
+bb = unname(unlist(fdm[27, 1:20]))
+cc = unname(unlist(fdm[538, 1:20]))
+intersect(aa,bb)
+intersect(aa,cc)
+intersect(bb,cc)
+ftrs.list = list(aa, bb, cc)
+
+## choose feature combination by looking at extreme cases
+ext.idx = sapply(1:R, function(i) which.max(fdm.auc[,i]))
+ext.idx
+ext.idx %in% maxmean.idx
+ext.idx %in% top5.idx
+
+fdm[ext.idx, (m-R+1):m]
+
+ftrs.list = list()
+for(i in 1:R){
+  ftrs.list[[i]] = unname(unlist(fdm[which.max(fdm.auc[,i]), 1:20]))
+}
+ftrs.list
 ######################################################################
 ######################## Self evaluation #############################
 ######################################################################
@@ -61,6 +231,7 @@ tst = left_join(tst, ftst)
 trn = data.table(trn)
 tst = data.table(tst)
 trn.y = trn$TARGET
+trn$TARGET =NULL
 
 #### stratified sampling for train
 set.seed(20160428)
@@ -151,8 +322,9 @@ tst = left_join(tst, ftst)
 trn = data.table(trn)
 tst = data.table(tst)
 trn.y = trn$TARGET
+trn$TARGET = NULL
 
-#training.pred = list()
+training.pred = list()
 testing.pred = list()
 auc.pred = c()
 optpar = data.frame(Rounds=2000, Depth = 4, r_sample = 0.8, eta =0.01)
@@ -198,14 +370,20 @@ res.df$ID = as.integer(res.df$ID)
 head(res.df)
 # aa = read.csv("submission.csv")
 # plot(res.df$TARGET, aa$TARGET)
-write.csv(res.df, "../../submission/sumision_xgboost0430.csv", row.names = FALSE, quote = FALSE)
+write.csv(res.df, "../../submission/sumision_xgboost0430_3.csv", row.names = FALSE, quote = FALSE)
 
 
 
 
 ###########
-dtrain <- xgb.DMatrix(data=Matrix(as.matrix(training), sparse = TRUE), label=trn.y, missing = -999)
-optpar = data.frame(Rounds=2000, Depth = 4, r_sample = 0.8, eta =0.01)
+trn = readRDS("train_clean.RDS")
+tst = readRDS("test_clean.RDS")
+ftrn = read.csv("../../feature/feature_all_train_ratio_only_wc_all.csv")
+ftst = read.csv("../../feature/feature_all_test_ratio_only_wc_all.csv")
+trn.y = trn$TARGET
+trn$TARGET = NULL
+
+optpar = data.frame(Rounds=2000, Depth = 5, r_sample = 0.7, eta =0.01)
 print("Train xgboost using xgb.train with watchlist")
 params = list(
   objective = "binary:logistic",
@@ -221,11 +399,14 @@ bst.cv <- xgb.cv(params = params,
                  early.stop.round = 20)
 bst <- xgboost(params = params,
                data=dtrain,
-               nrounds = 732,
+               nrounds = which.max(bst.cv$test.auc.mean),
                verbose = 0)
 importance <- xgb.importance(feature_names = names(training), model = bst)
 head(importance$Feature, 20)
 xgb.plot.importance(importance_matrix = importance)
+res.df = data.frame(ID = tst$ID, TARGET = predict(bst, Matrix(as.matrix(testing), sparse = TRUE)))
+aa = read.csv("submission.csv")
+plot(res.df$TARGET, aa$TARGET)
 
 ## ## For test data
 x.tst = Matrix(as.matrix(testing), sparse = TRUE)
@@ -243,7 +424,5 @@ for(i in 1:10){
 res.df = data.frame(ID = tst$ID, TARGET = apply(pred, 1, mean))
 res.df$ID = as.integer(res.df$ID)
 head(res.df)
-# aa = read.csv("submission.csv")
-# plot(res.df$TARGET, aa$TARGET)
-write.csv(res.df, "../../submission/sumision_xgboost0429.csv", row.names = FALSE, quote = FALSE)
 
+write.csv(res.df, "../../submission/sumision_xgboost0429.csv", row.names = FALSE, quote = FALSE)
