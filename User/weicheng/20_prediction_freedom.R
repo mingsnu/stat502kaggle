@@ -139,7 +139,6 @@ fdm$aucMean = apply(fdm.auc, 1, mean)
 fdm$aucStd = apply(fdm.auc, 1, sd)
 fdm %>% filter(aucMean > 0.835) %>% select(starts_with("auc"))
 maxmean.idx = which(fdm$aucMean > 0.835)
-fdm[maxmean.idx, (m-R+1):m]
 
 ## choose feature combination by looking at # of top 5
 fdm.bestcomb = unlist(lapply(1:R, function(i) which(fdm.auc[,i] %in% sort(fdm.auc[,i])[(n-5):n])))
@@ -217,6 +216,109 @@ for(i in 1:R){
   ftrs.list[[i]] = unname(unlist(fdm[which.max(fdm.auc[,i]), 1:20]))
 }
 ftrs.list
+
+##################################
+##### 6. freedom_m30R_10.csv #####
+##################################
+fdm = read.csv("tuning/freedom_m30R_10.csv", stringsAsFactors = FALSE)
+R = 10
+m = ncol(fdm)
+n = nrow(fdm)
+fdm.auc = fdm[, (m-R+1):m]
+
+## choose feature combination by using mean value
+fdm$aucMean = apply(fdm.auc, 1, mean)
+fdm$aucStd = apply(fdm.auc, 1, sd)
+head(fdm)
+fdm %>% filter(aucMean > 0.838) %>% select(starts_with("auc"))
+maxmean.idx = which(fdm$aucMean > 0.838)
+
+ftrs.list = list()
+for(i in 1:length(maxmean.idx)){
+  ftrs.list[[i]] = unname(unlist(fdm[maxmean.idx[i], 1:30]))
+}
+
+intersect(ftrs.list[[1]], ftrs.list[[2]])
+intersect(ftrs.list[[2]], ftrs.list[[3]])
+intersect(ftrs.list[[1]], ftrs.list[[3]])
+intersect(intersect(ftrs.list[[1]], ftrs.list[[2]]),  ftrs.list[[3]])
+
+## choose feature combination by looking at # of top 5
+fdm.bestcomb = unlist(lapply(1:R, function(i) which(fdm.auc[,i] %in% sort(fdm.auc[,i])[(n-5):n])))
+fdm.bst.tbl = table(fdm.bestcomb)
+sort(fdm.bst.tbl, decreasing = TRUE)
+top5.idx = as.numeric(names(sort(fdm.bst.tbl, decreasing = TRUE))[1:4])
+fdm[141, (m-R+1):(m+2)]
+fdm[176, (m-R+1):(m+2)]
+fdm[maxmean.idx, (m-R+1):(m+2)]
+
+aa = unname(unlist(fdm[141, 1:30]))
+bb = unname(unlist(fdm[176, 1:30]))
+
+intersect(aa,bb)
+intersect(aa,cc)
+intersect(bb,cc)
+ftrs.list = list(aa, bb, cc)
+
+## choose feature combination by looking at extreme cases (NOT GOOD)
+ext.idx = sapply(1:R, function(i) which.max(fdm.auc[,i]))
+ext.idx
+ext.idx %in% maxmean.idx
+ext.idx %in% top5.idx
+
+fdm[ext.idx, (m-R+1):(m+2)]
+
+ftrs.list = list()
+for(i in 1:R){
+  ftrs.list[[i]] = unname(unlist(fdm[which.max(fdm.auc[,i]), 1:20]))
+}
+ftrs.list
+
+
+##################################
+##### 7. freedom_m40R_10.csv #####
+##################################
+fdm = read.csv("tuning/freedom_m40R_10.csv", stringsAsFactors = FALSE)
+R = 10
+m = ncol(fdm)
+n = nrow(fdm)
+fdm.auc = fdm[, (m-R+1):m]
+
+## choose feature combination by using mean value
+fdm$aucMean = apply(fdm.auc, 1, mean)
+fdm$aucStd = apply(fdm.auc, 1, sd)
+head(fdm)
+fdm %>% filter(aucMean > 0.8385) %>% select(starts_with("auc"))
+maxmean.idx = which(fdm$aucMean > 0.8385)
+
+ftrs.list = list()
+for(i in 1:length(maxmean.idx)){
+  ftrs.list[[i]] = unname(unlist(fdm[maxmean.idx[i], 1:30]))
+}
+
+Reduce(intersect, ftrs.list[3:5])
+
+
+## choose feature combination by looking at # of top 5
+fdm.bestcomb = unlist(lapply(1:R, function(i) which(fdm.auc[,i] %in% sort(fdm.auc[,i])[(n-5):n])))
+fdm.bst.tbl = table(fdm.bestcomb)
+sort(fdm.bst.tbl, decreasing = TRUE)
+top5.idx = as.numeric(names(sort(fdm.bst.tbl, decreasing = TRUE))[1:4])
+fdm[top5.idx[1], (m-R+1):(m+2)]
+
+## choose feature combination by looking at extreme cases (NOT GOOD)
+ext.idx = sapply(1:R, function(i) which.max(fdm.auc[,i]))
+ext.idx
+ext.idx %in% maxmean.idx
+ext.idx %in% top5.idx
+
+fdm[ext.idx, (m-R+1):(m+2)]
+
+ftrs.list = list()
+for(i in 1:R){
+  ftrs.list[[i]] = unname(unlist(fdm[which.max(fdm.auc[,i]), 1:20]))
+}
+ftrs.list
 ######################################################################
 ######################## Self evaluation #############################
 ######################################################################
@@ -224,8 +326,8 @@ ftrs.list
 ### Loading data & features
 trn = readRDS("train_clean.RDS")
 tst = readRDS("test_clean.RDS")
-ftrn = read.csv("../../feature/feature_all_train_ratio_only_wc_99.csv")
-ftst = read.csv("../../feature/feature_all_test_ratio_only_wc_99.csv")
+ftrn = read.csv("../../feature/feature_all_train_ratio_only_wc_all.csv")
+ftst = read.csv("../../feature/feature_all_test_ratio_only_wc_all.csv")
 trn = left_join(trn, ftrn)
 tst = left_join(tst, ftst)
 trn = data.table(trn)
@@ -234,8 +336,7 @@ trn.y = trn$TARGET
 trn$TARGET =NULL
 
 #### stratified sampling for train
-set.seed(20160428)
-R=5
+R=10
 trn.idx = createDataPartition(y = trn.y, times = R, p = .7)
 j=1
 
@@ -243,7 +344,7 @@ training.pred = list()
 testing.pred = list()
 auc.pred = c()
 
-optpar = data.frame(Rounds=2000, Depth = 4, r_sample = 0.8, eta =0.01)
+optpar = data.frame(Rounds=2000, Depth = 5, r_sample = 0.7, eta =0.01)
 params = list(
   objective = "binary:logistic", 
   eta = optpar$eta,    
@@ -426,3 +527,4 @@ res.df$ID = as.integer(res.df$ID)
 head(res.df)
 
 write.csv(res.df, "../../submission/sumision_xgboost0429.csv", row.names = FALSE, quote = FALSE)
+
