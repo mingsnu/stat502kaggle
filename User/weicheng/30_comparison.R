@@ -30,25 +30,25 @@ ftrs.list
 trn = readRDS("train_clean.RDS")
 tst = readRDS("test_clean.RDS")
 ftrn = read.csv("../../feature/feature_all_train_ratio_only_wc_all.csv")
-ftst = read.csv("../../feature/feature_all_test_ratio_only_wc_all.csv")
+# ftst = read.csv("../../feature/feature_all_test_ratio_only_wc_all.csv")
 trn.y = trn$TARGET
 trn$TARGET = NULL
 
 if(method==1){
   ## using raw data only
   training = trn
-  testing = tst
+#  testing = tst
   training$ID = NULL
-  testing$ID = NULL
+#  testing$ID = NULL
   training.dat = Matrix(as.matrix(training), sparse = TRUE)
   dtrain <- xgb.DMatrix(data=training.dat, label=trn.y, missing = -999)
 }
 if(method==2){
   ## using raw data + all feature directly
   training = left_join(trn, ftrn)
-  testing = left_join(tst, ftst)
+#  testing = left_join(tst, ftst)
   training$ID = NULL
-  testing$ID = NULL
+#  testing$ID = NULL
   training.dat = Matrix(as.matrix(training), sparse = TRUE)
   dtrain <- xgb.DMatrix(data=training.dat, label=trn.y, missing = -999)
 }
@@ -56,12 +56,12 @@ if(method==2){
 if(method==3){
   ## using selected features from 'freedom'
   training = left_join(trn, ftrn)
-  testing = left_join(tst, ftst)
+#  testing = left_join(tst, ftst)
   training$ID = NULL
-  testing$ID = NULL
+#  testing$ID = NULL
   ftr.idx = names(training) %in% unique(unlist(ftrs.list)) #752
   training = training[, ftr.idx]
-  testing = testing[, ftr.idx]
+#  testing = testing[, ftr.idx]
   training.dat = Matrix(as.matrix(training), sparse = TRUE)
   dtrain <- xgb.DMatrix(data=training.dat, label=trn.y, missing = -999)
 }
@@ -69,10 +69,10 @@ if(method==4){
   ## using raw + selected features
   ftr.idx = which(names(ftrn) %in% c("ID", unique(unlist(ftrs.list))))
   training = left_join(trn, ftrn[, ftr.idx])
-  testing = left_join(tst, ftst[, ftr.idx])
+#  testing = left_join(tst, ftst[, ftr.idx])
   training$ID = NULL
-  testing$ID = NULL
-  dim(training); dim(testing)
+#  testing$ID = NULL
+#  dim(training); dim(testing)
   training.dat = Matrix(as.matrix(training), sparse = TRUE)
   dtrain <- xgb.DMatrix(data=training.dat, label=trn.y, missing = -999)
 }
