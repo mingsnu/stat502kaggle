@@ -87,7 +87,7 @@ params = list(
   eval_metric = "auc")
 
 res = NULL
-for(i in 1:10){
+for(i in 1:50){
   xgb_cv <- xgb.cv(params = params,
                    data=dtrain,
                    nfold = 4,
