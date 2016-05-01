@@ -107,22 +107,22 @@ for(i in 1:50){
 colnames(res)=c("aucMean", "aucStd", "bestRound")
 write.csv(res, paste0("comparison/method", method, ".csv"), row.names = FALSE)
 
-# res = NULL
-# for(i in 1:4){
-#   res[[i]] = read.csv(paste0("comparison/method", i, ".csv"))
-# }
-# for(i in 1:3){
-#   for(j in (i+1):4){
-#     cat(i, " and ", j, ":\n")
-#     print(t.test(res[[i]]$aucMean, res[[j]]$aucMean))
-#   }
-# }
-# 
-# for(i in 1:3){
-#   for(j in (i+1):4){
-#     cat(i, " and ", j, ":\n")
-#     print(t.test(res[[i]]$aucStd, res[[j]]$aucStd))
-#   }
-# }
-# 
-# sapply(1:4, function(i) mean(res[[i]]$aucMean))
+res = NULL
+for(i in 1:4){
+  res[[i]] = read.csv(paste0("comparison/method", i, ".csv"))
+}
+for(i in 1:3){
+  for(j in (i+1):4){
+    cat(i, " and ", j, ":\n")
+    print(t.test(res[[i]]$aucMean, res[[j]]$aucMean)$p.value)
+  }
+}
+
+for(i in 1:3){
+  for(j in (i+1):4){
+    cat(i, " and ", j, ":\n")
+    print(t.test(res[[i]]$aucStd, res[[j]]$aucStd)$p.value)
+  }
+}
+
+sapply(1:4, function(i) mean(res[[i]]$aucMean))

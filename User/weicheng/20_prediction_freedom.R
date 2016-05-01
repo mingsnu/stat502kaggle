@@ -289,15 +289,17 @@ fdm$aucMean = apply(fdm.auc, 1, mean)
 fdm$aucStd = apply(fdm.auc, 1, sd)
 head(fdm)
 fdm %>% filter(aucMean > 0.8385) %>% select(starts_with("auc"))
+
 maxmean.idx = which(fdm$aucMean > 0.8385)
+cor(t(fdm.auc[maxmean.idx,]))
 
 ftrs.list = list()
 for(i in 1:length(maxmean.idx)){
   ftrs.list[[i]] = unname(unlist(fdm[maxmean.idx[i], 1:30]))
 }
 
-Reduce(intersect, ftrs.list[3:5])
-
+Reduce(intersect, ftrs.list[7:8])
+# saveRDS(Reduce(union, ftrs.list[7:8]), "features/finalFtr.rds")
 
 ## choose feature combination by looking at # of top 5
 fdm.bestcomb = unlist(lapply(1:R, function(i) which(fdm.auc[,i] %in% sort(fdm.auc[,i])[(n-5):n])))
