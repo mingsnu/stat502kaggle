@@ -299,7 +299,7 @@ for(i in 1:length(maxmean.idx)){
 }
 
 Reduce(intersect, ftrs.list[7:8])
-# saveRDS(Reduce(union, ftrs.list[7:8]), "features/finalFtr.rds")
+saveRDS(Reduce(union, ftrs.list[c(2,3,4)]), "features/final_imp_ftrs.rds")
 
 ## choose feature combination by looking at # of top 5
 fdm.bestcomb = unlist(lapply(1:R, function(i) which(fdm.auc[,i] %in% sort(fdm.auc[,i])[(n-5):n])))

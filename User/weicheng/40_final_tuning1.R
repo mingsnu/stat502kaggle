@@ -31,7 +31,7 @@ if(!exists(paste0("tuning/", out.name, "_1.csv"))){
   MCW = c(0.5, 1, 2, 3, 4)
   RSAMPLE = 0.7
   CSAMPLE = 0.7
-  ETA =  0.01
+  ETA =  0.1
   SPWEIGHT = 1
   GAMMA = 0
   
